@@ -24,13 +24,11 @@ class TestDatabase(unittest.TestCase):
     def test_insert(self):
         """Test the insert method."""
         self.db.create_table("test", ["id INTEGER PRIMARY KEY", "name TEXT"])
-        self.db.insert("test", ["name"], ["test name"])
+        self.db.insert("test", ["name"], ["test"])
         self.db.cursor.execute("SELECT * FROM test")
         rows = self.db.cursor.fetchall()
-        for row in rows:
-            print(f"namerow['name']")
         self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["name"], "test name")
+        self.assertEqual(rows[0]["name"], "test")
 
     def test_select(self):
         """Test the select method."""
