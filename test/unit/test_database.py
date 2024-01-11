@@ -1,5 +1,6 @@
 """This module tests the database.py module."""
 import unittest
+from pathlib import Path
 
 from carhartt_pbi_automate.database import Database
 
@@ -10,6 +11,32 @@ class TestDatabase(unittest.TestCase):
     def setUp(self):
         """Set up the test."""
         self.db = Database(":memory:")
+
+    def tearDown(self):
+        """Tear down the test."""
+        self.db.close()
+        if isinstance(self.db.db_file, Path):
+            self.db.db_file.unlink(missing_ok=True)
+
+    def test_database_init(self):
+        """Test the Database.__init__ method."""
+        self.assertIsInstance(self.db, Database)
+        self.assertEqual(self.db.db_file, ":memory:")
+
+        # Test that the database file is created if a file path is passed as str
+        self.db = Database("test.db")
+        self.assertEqual(str(self.db.db_file), "test.db")
+        self.assertTrue(self.db.db_file.exists())
+        self.db.close()
+
+        # Test that the database file is created if a file path is passed as Path
+        self.db = Database(Path("test.db"))
+        self.assertEqual(str(self.db.db_file), "test.db")
+        self.db.close()
+
+        # Test that the exepction is raised if db_file is not a Path or str
+        with self.assertRaises(TypeError):
+            Database(1)
 
     def test_create_table(self):
         """Test the create_table method."""
@@ -54,3 +81,7 @@ class TestDatabase(unittest.TestCase):
         self.db.delete("test")
         rows = self.db.select("test", ["name"])
         self.assertEqual(len(rows), 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
