@@ -361,3 +361,8 @@ $RECYCLE.BIN/
 
 # Power BI
 *.pbix
+
+# Log files
+log/
+logs/
+*.log
