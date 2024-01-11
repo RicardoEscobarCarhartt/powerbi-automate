@@ -14,12 +14,13 @@ class Database:
             if db_file == ":memory:":
                 self.db_file = db_file
             else:
-                db_file = Path(db_file)
+                self.db_file = Path(db_file)
         elif isinstance(db_file, Path):
             self.db_file = db_file
             self.db_file.parent.mkdir(parents=True, exist_ok=True)
         else:
             raise TypeError("db_file must be a Path or str")
+
         self.conn = sqlite3.connect(self.db_file)
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
