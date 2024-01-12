@@ -366,3 +366,12 @@ $RECYCLE.BIN/
 log/
 logs/
 *.log
+
+# SQLite3 database files
+*.sqlite3
+*.db
+*.sdb
+*.sqlite
+*.db3
+*.s3db
+*.sl3
