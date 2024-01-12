@@ -15,23 +15,25 @@ class TestMyLogger(unittest.TestCase):
         self.log_file.unlink(missing_ok=True)
 
     def test_logger_init(self):
+        """Test that the logger is initialized correctly"""
         self.assertIsInstance(self.logger, MyLogger)
         self.assertEqual(self.logger.name, "test.unit.test_my_logger")
         self.assertEqual(self.logger.log_file, self.log_file)
         self.assertTrue(self.log_file.exists())
 
-    def test_logger_init_console_file_optional(self):
+    def test_logger_optional_logging(self):
         """Test that the stream handler is not used if the console_log, file_log attributes is set to False"""
         self.logger.console_log = False
         for handler in self.logger.handlers:
             self.assertNotIsInstance(handler, logging.StreamHandler)
-        self.logger.info("This is a test, this message should not be printed to the console")
-
-
+        self.logger.info(
+            "This is a test, this message should not be printed to the console"
+        )
 
     def test_logger_logging(self):
+        """Test that the logger is logging correctly"""
         self.logger.info("This is a test")
-        with open(self.log_file, "r") as f:
+        with open(self.log_file, "r", encoding="utf-8") as f:
             content = f.read()
             self.assertIn("This is a test", content)
 
