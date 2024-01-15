@@ -76,22 +76,19 @@ class Database:
         """Close the database."""
         self.conn.close()
 
-    @classmethod
-    def get_table_list(
-        cls, db_file: Union[Path, str] = ":memory:"
-    ) -> List[str]:
-        """Return a list of tables in the database."""
-        if isinstance(db_file, str):
-            if db_file != ":memory:":
-                db_file = Path(db_file)
-        elif not isinstance(db_file, Path):
-            raise TypeError("db_file must be a Path or str")
+    def get_columns(self, table_name: str) -> List[str]:
+        """Return a list of columns in the table."""
+        sql = f"PRAGMA table_info({table_name});"
+        self.cursor.execute(sql)
+        columns = self.cursor.fetchall()
+        result = [column["name"] for column in columns]
+        return result
 
-        conn = sqlite3.connect(db_file)
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = cursor.fetchall()
-        conn.close()
+    def get_tables(self) -> List[str]:
+        """Return a list of tables in the database."""
+        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = self.cursor.fetchall()
+        self.conn.close()
 
         # This list comprehension is used to convert the list of tuples
         # returned to a list of strings.
