@@ -75,3 +75,25 @@ class Database:
     def close(self):
         """Close the database."""
         self.conn.close()
+
+    @classmethod
+    def get_table_list(
+        cls, db_file: Union[Path, str] = ":memory:"
+    ) -> List[str]:
+        """Return a list of tables in the database."""
+        if isinstance(db_file, str):
+            if db_file != ":memory:":
+                db_file = Path(db_file)
+        elif not isinstance(db_file, Path):
+            raise TypeError("db_file must be a Path or str")
+
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = cursor.fetchall()
+        conn.close()
+
+        # This list comprehension is used to convert the list of tuples
+        # returned to a list of strings.
+        result = [table[0] for table in tables if table != "sqlite_sequence"]
+        return result
