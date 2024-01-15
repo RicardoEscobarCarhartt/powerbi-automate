@@ -82,6 +82,28 @@ class TestDatabase(unittest.TestCase):
         rows = self.db.select("test", ["name"])
         self.assertEqual(len(rows), 0)
 
+    def test_get_table_list(self):
+        """Test the get_table_list method."""
+        # Test with in-memory database
+        tables = self.db.get_table_list()
+        self.assertEqual(len(tables), 0)
+
+        # Test with file-based database
+        self.db = Database("test.db")
+        tables = self.db.get_table_list()
+        self.assertEqual(len(tables), 0)
+        self.db.close()
+
+        # Test with existing tables in the database
+        self.db = Database("test.db")
+        self.db.create_table("table1", ["id INTEGER PRIMARY KEY", "name TEXT"])
+        self.db.create_table("table2", ["id INTEGER PRIMARY KEY", "name TEXT"])
+        tables = self.db.get_table_list("test.db")
+        self.assertEqual(len(tables), 2)
+        self.assertIn("table1", tables)
+        self.assertIn("table2", tables)
+        self.db.close()
+
 
 if __name__ == "__main__":
     unittest.main()
