@@ -1,3 +1,4 @@
+BEGIN;
 CREATE TABLE IF NOT EXISTS log_record ( /*
 The LogRecord has a number of attributes, most of which are derived from the parameters to the constructor. (Note that the names do not always correspond exactly between the LogRecord constructor parameters and the LogRecord attributes.) These attributes can be used to merge data from the record into the format string. The following table lists (in alphabetical order) the attribute names, their meanings and the corresponding placeholder in a %-style format string.
 
@@ -7,7 +8,8 @@ In the case of {}-formatting, you can specify formatting flags by placing them a
 */
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     args            TEXT, -- The tuple of arguments merged into msg to produce message, or a dict whose values are used for the merge (when there is only one argument, and it is a dictionary).
-    asctime         TEXT, -- Human-readable time when the LogRecord was created. By default this is of the form ‘2003-07-08 16:49:45,896’ (the numbers after the comma are millisecond portion of the time).
+    asctime         TEXT, -- Human-readable time when the LogRecord was created. By default this is of the form ‘2003-07-08 16:49:45,896’ (the numbers after the comma are millisecond portion of the time) asctime is local timezone where the database is running.
+    asctime_utc     TEXT, -- UTC time zone version of asctime
     created         REAL, -- Time when the LogRecord was created (as returned by time.time()).
     exc_info        TEXT, -- Exception tuple (à la sys.exc_info) or, if no exception has occurred, None.
     filename        TEXT, -- Filename portion of pathname.
@@ -28,3 +30,4 @@ In the case of {}-formatting, you can specify formatting flags by placing them a
     threadName      TEXT, -- Thread name (if available).
     taskName        TEXT -- asyncio.Task name (if available).
 );
+COMMIT;
