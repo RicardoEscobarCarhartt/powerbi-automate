@@ -1,14 +1,13 @@
+"""This module contains unit tests for the SqliteHandler class."""
 import unittest
 import logging
 from pathlib import Path
-from unittest.mock import MagicMock
-from datetime import datetime
 
-from carhartt_pbi_automate.sqlite_handler import SqliteHandler
 from carhartt_pbi_automate.database import Database
 from carhartt_pbi_automate.my_logger import MyLogger
 
 class TestSqliteHandler(unittest.TestCase):
+    """Test the SqliteHandler class."""
     def setUp(self):
         self.log_file = Path("logs/test/test_sqlite_handler.log")
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
