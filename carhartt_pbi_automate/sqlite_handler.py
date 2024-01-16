@@ -1,6 +1,7 @@
+"""Custom handler for logging record information on a SQLite3 database."""
 import logging
 from pathlib import Path
-from datetime import datetime, timezone, UTC
+from datetime import datetime, UTC
 
 
 from carhartt_pbi_automate.database import Database
@@ -12,19 +13,23 @@ class SqliteHandler(logging.StreamHandler):
     def __init__(self, database: Database = None, sql_script: Path = None):
         """Initialize the handler.
         args:
-            database: Database object, if None a new database will be created at the default location "logging.db".
-            sql_script: Path object to a SQL script to be executed on the database as soon as the handler is initialized.
+            database: Database object, if None a new database will be created
+            at the default location "logging.db". sql_script: Path object to a
+            SQL script to be executed on the database as soon as the handler is
+            initialized.
         """
         super().__init__()
 
-        # create a new database if none is provided, create a new database at the default location "logging.db"
+        # create a new database if none is provided, create a new database at
+        # the default location "logging.db"
         if database:
             if isinstance(database, Database):
                 self.database = database
         else:
             self.database = Database(Path("logging.db"))
 
-        # execute the SQL script on the database as soon as the handler is initialized
+        # execute the SQL script on the database as soon as the handler is
+        # initialized
         if sql_script:
             if isinstance(sql_script, Path):
                 self.sql_script = sql_script
