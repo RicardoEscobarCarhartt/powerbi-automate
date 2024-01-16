@@ -84,10 +84,13 @@ class MyLogger(logging.Logger):
 
     def close(self):
         """Close the logger."""
-        self.file_handler.close()
-        self.stream_handler.close()
-        self.sqlite_handler.close()
-        self.removeHandler(self.file_handler)
-        self.removeHandler(self.stream_handler)
-        self.removeHandler(self.sqlite_handler)
+        if self.file_handler:
+            self.file_handler.close()
+            self.removeHandler(self.file_handler)
+        if self.stream_handler:
+            self.stream_handler.close()
+            self.removeHandler(self.stream_handler)
+        if self.sqlite_handler:
+            self.sqlite_handler.close()
+            self.removeHandler(self.sqlite_handler)
         self.info("Logger closed")
