@@ -30,10 +30,6 @@ class SqliteHandler(logging.StreamHandler):
                 self.sql_script = sql_script
         elif isinstance(sql_script, str):
             self.sql_script = Path(sql_script)
-        else:
-            raise TypeError(
-                "sql_script must be a Path object or a string containing a path to a SQL script."
-            )
 
     def emit(self, record):
         """Emit a record to the provided SQLite database."""
