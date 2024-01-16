@@ -26,6 +26,7 @@ class MyLogger(logging.Logger):
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Create a file handler to write to the log file
+        self.file_handler = None
         if log_to_file:
             self.file_handler = logging.FileHandler(self.log_file)
             self.file_handler.setLevel(level)
@@ -37,6 +38,7 @@ class MyLogger(logging.Logger):
             self.info("File logging enabled")
 
         # Create a stream handler to print to stdout
+        self.stream_handler = None
         if log_to_console:
             self.stream_handler = logging.StreamHandler()
             self.stream_handler.setLevel(level)
@@ -46,6 +48,7 @@ class MyLogger(logging.Logger):
             self.info("Console logging enabled")
 
         # Create a database handler to write to a database
+        self.database = None
         if log_to_database:
             if database:
                 if isinstance(database, Database):
@@ -61,11 +64,11 @@ class MyLogger(logging.Logger):
                 database_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     self.database = Database(database_path)
-                except Exception as exption:
+                except Exception as exeption:
                     self.warning(
                         "Unable to open database at %s: %s",
                         database_path,
-                        exption
+                        exeption
                     )
                     # Create an empty database object
                     self.database = Database(":memory:")
@@ -81,8 +84,10 @@ class MyLogger(logging.Logger):
 
     def close(self):
         """Close the logger."""
-        self.info("Logger closed")
-        self.removeHandler(self.file_handler)
         self.file_handler.close()
-        self.removeHandler(self.stream_handler)
         self.stream_handler.close()
+        self.sqlite_handler.close()
+        self.removeHandler(self.file_handler)
+        self.removeHandler(self.stream_handler)
+        self.removeHandler(self.sqlite_handler)
+        self.info("Logger closed")
