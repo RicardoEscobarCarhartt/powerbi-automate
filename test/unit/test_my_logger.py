@@ -4,17 +4,30 @@ from pathlib import Path
 
 from carhartt_pbi_automate.my_logger import MyLogger
 from carhartt_pbi_automate.sqlite_handler import SqliteHandler
+from carhartt_pbi_automate.database import Database
 
 
 class TestMyLogger(unittest.TestCase):
     def setUp(self):
         self.log_file = Path("logs/test/test_my_logger.log")
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
-        self.logger = MyLogger("test.unit.test_my_logger", self.log_file)
+        sqlite_script = Path("database/logging.sql")
+        test_db = Path("database/test_my_logging.db")
+        self.database = Database(test_db, sqlite_script)
+        self.logger = MyLogger(
+            "test.unit.test_my_logger",
+            self.log_file,
+            logging.DEBUG,
+            log_to_console=False,
+            log_to_file=True,
+            log_to_database=True,
+            database=self.database,
+        )
 
     def tearDown(self):
         self.logger.close()
-        # self.log_file.unlink(missing_ok=True)
+        self.database.close()
+        self.log_file.unlink()
 
     def test_logger_init(self):
         """Test that the logger is initialized correctly"""
@@ -26,7 +39,6 @@ class TestMyLogger(unittest.TestCase):
     def test_logger_optional_logging(self):
         """Test that the stream handler is not used if the console_log, file_log attributes is set to False"""
         # Test that the stream handler is not used if the console_log attribute is set to False
-        self.logger.console_log = False
         if self.logger.stream_handler:
             self.logger.stream_handler.setLevel(logging.WARNING)
         for handler in self.logger.handlers:
