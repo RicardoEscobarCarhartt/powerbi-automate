@@ -8,8 +8,27 @@ from typing import List, Union
 class Database:
     """This class represents the SQLite database."""
 
-    def __init__(self, db_file: Union[Path, str] = ":memory:"):
+    def __init__(
+        self,
+        db_file: Union[Path, str] = ":memory:",
+        initial_sql_script: Path = None,
+    ):
         """Initialize the database."""
+        if initial_sql_script:
+            if isinstance(initial_sql_script, Path):
+                self.initial_sql_script = initial_sql_script
+            elif isinstance(initial_sql_script, str):
+                self.initial_sql_script = Path(initial_sql_script)
+            self.initial_sql_script.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(
+                self.initial_sql_script, "r", encoding="utf-8"
+            ) as sql_script:
+                sql = sql_script.read()
+                self.conn = sqlite3.connect(db_file)
+                self.conn.executescript(sql)
+                self.conn.commit()
+
         if isinstance(db_file, str):
             if db_file == ":memory:":
                 self.db_file = db_file
@@ -86,7 +105,9 @@ class Database:
 
     def get_tables(self) -> List[str]:
         """Return a list of tables in the database."""
-        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        self.cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        )
         tables = self.cursor.fetchall()
         self.conn.close()
 
