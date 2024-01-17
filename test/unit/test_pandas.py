@@ -12,34 +12,62 @@ def test_pandas():
     print(df)
 
 
-def test_load_excel():
+def test_load_excel(filename: str | Path = None):
     """Test load excel"""
-    filename = "C:/Users/rescobar/OneDrive - Carhartt Inc/Documents/git/powerbi-automate/data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
+    if filename is None:
+        raise ValueError("Filename is required.")
+    elif isinstance(filename, str):
+        filename = Path(filename)
+    elif not isinstance(filename, Path):
+        raise ValueError("Filename must be a string or Path object.")
+
     df = pd.read_excel(filename, sheet_name="Sheet1")
-    # for index, row in df.iterrows():
-    #     print(row['Código de producto'], row['Cantidad'])
+
     print(df)
-    suma = 0
-    expected = 0
+    grand_total = {
+        "Sales Demand Units": 0,
+        "Total Receipt Plan Units": 0,
+        "Planned Production Units": 0,
+    }
+    # Loop through the rows of the dataframe to get the actual grand total
     for _, row in df.iterrows():
         if row["Row Labels"] != "Grand Total":
-            suma += row["Sales Demand Units"]
-        else:
-            expected = row["Sales Demand Units"]
+            grand_total["Sales Demand Units"] += row["Sales Demand Units"]
+            grand_total["Total Receipt Plan Units"] += row[
+                "Total Receipt Plan Units"
+            ]
+            grand_total["Planned Production Units"] += row[
+                "Planned Production Units"
+            ]
+        elif row["Row Labels"] == "Grand Total":
+            expected = {
+                "Sales Demand Units": row["Sales Demand Units"],
+                "Total Receipt Plan Units": row["Total Receipt Plan Units"],
+                "Planned Production Units": row["Planned Production Units"],
+            }
 
-    if suma == expected:
-        print("OK")
-    else:
-        print(
-            f"Error: {suma} != {expected} there is a difference of {suma - expected}"
-        )
+    # Assert the actual grand total is equal to the expected grand total
+    try:
+        assert grand_total == expected
+        print("OK: There is no difference.")
+    except AssertionError as exeption:
+        # Calculate the difference between the actual and expected grand total
+        difference = {
+            "Sales Demand Units": grand_total["Sales Demand Units"]
+            - expected["Sales Demand Units"],
+            "Total Receipt Plan Units": grand_total["Total Receipt Plan Units"]
+            - expected["Total Receipt Plan Units"],
+            "Planned Production Units": grand_total["Planned Production Units"]
+            - expected["Planned Production Units"],
+        }
+        print(f"Error: {exeption}\nThere is difference of:\n{difference}")
 
 
 def main():
-    test_load_excel()
+    """Main function"""
+    excel_file = "C:/Users/rescobar/OneDrive - Carhartt Inc/Documents/git/powerbi-automate/data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
+    test_load_excel(excel_file)
 
 
 if __name__ == "__main__":
     main()
-    # test_pandas()
-    # test_load_excel()
