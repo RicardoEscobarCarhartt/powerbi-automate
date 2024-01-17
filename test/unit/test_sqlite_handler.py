@@ -37,6 +37,7 @@ class TestSqliteHandler(unittest.TestCase):
         cursor = self.database.cursor.execute(sql_query)
         row = cursor.fetchone()
         self.assertEqual(row["message"], "Test message")
-        
+
+
 if __name__ == "__main__":
     unittest.main()
