@@ -1,7 +1,7 @@
-import pandas as pd
+"""This module tests the pandas library being used to load the excel file and
+test the data."""
 from pathlib import Path
-
-print(pd.__version__)
+import pandas as pd
 
 
 def test_pandas():
@@ -13,7 +13,18 @@ def test_pandas():
 
 
 def test_load_excel(filename: str | Path = None):
-    """Test load excel"""
+    """Test load excel
+
+    Args:
+        filename (str | Path, optional): The path to the Excel file. Defaults to None.
+
+    Raises:
+        ValueError: If filename is None.
+        ValueError: If filename is not a string or Path object.
+
+    Returns:
+        None
+    """
     if filename is None:
         raise ValueError("Filename is required.")
     elif isinstance(filename, str):
