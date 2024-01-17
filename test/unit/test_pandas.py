@@ -31,9 +31,7 @@ def test_load_excel():
         print("OK")
     else:
         print(
-            "Error: {} != {} there is a difference of {}".format(
-                suma, expected, suma - expected
-            )
+            f"Error: {suma} != {expected} there is a difference of {suma - expected}"
         )
 
 
