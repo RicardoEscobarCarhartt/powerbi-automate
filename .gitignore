@@ -378,3 +378,6 @@ logs/
 
 # Data
 data/
+
+# Exeption for requirements.txt
+!requirements.txt
