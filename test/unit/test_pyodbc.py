@@ -1,5 +1,15 @@
+"""This module tests the pyodbc library being used to connect to the database
+and execute the query. The results are then stored in a pandas DataFrame."""
+import os
+
 import pyodbc
 import pandas as pd
+from dotenv import load_dotenv
+
+
+# Load the environment variables from the .env file
+load_dotenv()
+
 
 def execute_sql_query(server, database, username, password, view_name):
     # Connection string
@@ -30,13 +40,14 @@ def execute_sql_query(server, database, username, password, view_name):
         if connection:
             connection.close()
 
+
 if __name__ == "__main__":
     # Replace these values with your actual database connection details
-    server = "your_server_name"
-    database = "your_database_name"
-    username = "your_username"
-    password = "your_password"
-    view_name = "your_view_name"
+    server = os.getenv("SERVER")
+    database = os.getenv("DATABASE")
+    username = os.getenv("USERNAME")
+    password = os.getenv("PASSWORD")
+    view_name = os.getenv("VIEW_NAME")
 
     # Execute the SQL query and store the result in a DataFrame
     execute_sql_query(server, database, username, password, view_name)
