@@ -11,14 +11,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def execute_sql_query(server, database, username, password, view_name):
-    """Execute the SQL query and store the result in a DataFrame"""
-    # Connection string
-    connection_string = f"DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};UID={username};PWD={password}"
+def execute_sql_query(server, database, view_name):
+    # Connection string for Windows authentication
+    connection_string = f"DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};Trusted_Connection=yes"
 
     try:
         # Connect to the database
         connection = pyodbc.connect(connection_string)
+        print("Connected to the database.")
         cursor = connection.cursor()
 
         # Example query on a view
@@ -26,12 +26,17 @@ def execute_sql_query(server, database, username, password, view_name):
 
         # Execute the query
         cursor.execute(query)
+        print("Executed the query.")
+
+        # Fetch the results into python list
+        results = cursor.fetchall()
+        print("Fetched the results.")
 
         # Fetch the results into a pandas DataFrame
-        df = pd.read_sql_query(query, connection)
+        df = pd.DataFrame.from_records(results, columns=[column[0] for column in cursor.description])
 
         # Print or manipulate the DataFrame as needed
-        print(df)
+        print(df.head(10))
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -47,12 +52,10 @@ def main():
     # Replace these values with your actual database connection details
     server = os.getenv("SERVER")
     database = os.getenv("DATABASE")
-    username = os.getenv("USERNAME")
-    password = os.getenv("PASSWORD")
     view_name = os.getenv("VIEW_NAME")
 
     # Execute the SQL query and store the result in a DataFrame
-    execute_sql_query(server, database, username, password, view_name)
+    execute_sql_query(server, database, view_name)
 
 
 if __name__ == "__main__":
