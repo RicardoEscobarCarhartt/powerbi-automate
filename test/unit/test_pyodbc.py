@@ -12,6 +12,7 @@ load_dotenv()
 
 
 def execute_sql_query(server, database, username, password, view_name):
+    """Execute the SQL query and store the result in a DataFrame"""
     # Connection string
     connection_string = f"DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};UID={username};PWD={password}"
 
@@ -41,7 +42,8 @@ def execute_sql_query(server, database, username, password, view_name):
             connection.close()
 
 
-if __name__ == "__main__":
+def main():
+    """Main function"""
     # Replace these values with your actual database connection details
     server = os.getenv("SERVER")
     database = os.getenv("DATABASE")
@@ -51,3 +53,7 @@ if __name__ == "__main__":
 
     # Execute the SQL query and store the result in a DataFrame
     execute_sql_query(server, database, username, password, view_name)
+
+
+if __name__ == "__main__":
+    main()
