@@ -12,7 +12,7 @@ def test_pandas():
     print(df)
 
 
-def test_load_excel(filename: str | Path = None):
+def test_load_excel_supply_no_connection(filename: str | Path = None):
     """Test load excel
 
     Args:
@@ -74,10 +74,32 @@ def test_load_excel(filename: str | Path = None):
         print(f"Error: {exeption}\nThere is difference of:\n{difference}")
 
 
+def test_load_excel_file(filename: str | Path = None):
+    """Load Excel file into a dataframe and print it."""
+    if filename is None:
+        raise ValueError("Filename is required.")
+    elif isinstance(filename, str):
+        filename = Path(filename)
+    elif not isinstance(filename, Path):
+        raise ValueError("Filename must be a string or Path object.")
+
+    excel_file = pd.ExcelFile(filename)
+    sheets = excel_file.sheet_names
+    print(f"Excel file: {str(filename)}")
+    print(f"There are {len(sheets)} Sheets: {sheets}")
+
+    # loop through the sheets and print the dataframes
+    for sheet in sheets:
+        df = pd.read_excel(filename, sheet_name=sheet)
+        print("--------------------")
+        print(f"Sheet: {sheet}")
+        print(df)
+
+
 def main():
     """Main function"""
-    excel_file = "C:/Users/rescobar/OneDrive - Carhartt Inc/Documents/git/powerbi-automate/data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
-    test_load_excel(excel_file)
+    excel_file = "C:/Users/rescobar/OneDrive - Carhartt Inc/Documents/git/powerbi-automate/data/Excel para automatización/Conectado a Supply.xlsx"
+    test_load_excel_file(excel_file)
 
 
 if __name__ == "__main__":
