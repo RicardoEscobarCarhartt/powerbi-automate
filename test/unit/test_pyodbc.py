@@ -13,6 +13,43 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def get_excel_supply_dataframe(
+    filename: Union[Path, str] = None, sheet_name: str = "Sheet1"
+) -> pd.DataFrame:
+    """Load the excel file and store the result in a DataFrame.
+    Args:
+        filename (Union[Path, str], optional): The path to the Excel file. Defaults to None.
+    Raises:
+        ValueError: If filename is None.
+        ValueError: If filename is not a string or Path object.
+    Returns:
+        pd.DataFrame: The DataFrame containing the data from the Excel file."""
+    # Validate the filename is valid
+    if filename:
+        if isinstance(filename, str):
+            filename = Path(filename)
+        if not isinstance(filename, Path):
+            raise ValueError(
+                "Filename must be a pathlib.Path object or a string to the file path."
+            )
+    else:
+        raise ValueError(
+            "Filename is required. Please use a valid pathlib.Path object or a string to the file path."
+        )
+
+    # Load the excel file into a pandas DataFrame
+    df = pd.read_excel(filename, sheet_name=sheet_name)
+
+    # Filter out the grand total row
+    df = filterout_grand_total(df)
+
+    # Print or manipulate the DataFrame as needed
+    print(df)
+
+    # Return the DataFrame
+    return df
+
+
 def get_supply_dataframe(
     server: str, database: str, sql_query_filepath: Union[Path, str] = None
 ) -> pd.DataFrame:
@@ -39,6 +76,9 @@ def get_supply_dataframe(
         sql_query = f.read()
 
     try:
+        # Initialize connection to None
+        connection = None
+
         # Connect to the database
         connection = pyodbc.connect(connection_string, readonly=True)
         print("Connected to the database.")
@@ -92,9 +132,72 @@ def main():
     server = os.getenv("SERVER")
     database = os.getenv("DATABASE")
     sql_filepath = Path("sql/supply.sql")
+    excel_filepath = Path(
+        "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
+    )
 
-    # Execute the SQL query and store the result in a DataFrame
-    supply_df = get_supply_dataframe(server, database, sql_filepath)
+    try:
+        # Get the supply data from the excel file and store it in a DataFrame
+        excel_df = get_excel_supply_dataframe(excel_filepath, "Sheet1")
+
+        # Get the supply data from the database and store it in a DataFrame
+        supply_df = get_supply_dataframe(server, database, sql_filepath)
+    except FileNotFoundError as error:
+        print(f"FileNotFoundError: {str(error)}")
+    except ValueError as error:
+        print(f"ValueError: {str(error)}")
+    except Exception as error:
+        print(f"Error: {str(error)}")
+
+    # Assert the '[YearPeriodMonth]' column in the supply_df is equal to the
+    # 'Row Labels' column in the excel_df. Excluding the column names.
+    try:
+        # Extract the relevant columns and clean them for comparison
+        # SQL columns
+        supply_dates = supply_df["YearPeriodMonth"].str.strip()
+        supply_sales_demand_units = supply_df["SalesDemandUnits"]
+
+        # Excel columns
+        excel_dates = excel_df["Row Labels"].str.strip()
+        excel_sales_demand_units = excel_df["Sales Demand Units"]
+
+
+        # Assert the equality of the dates columns
+        pd.testing.assert_series_equal(
+            supply_dates,
+            excel_dates,
+            check_dtype=False,
+            check_index=False,
+            check_series_type=False,
+            check_names=False,
+            check_category_order=False,
+        )
+        # Assert the equality of the sales demand units columns
+        pd.testing.assert_series_equal(
+            supply_sales_demand_units,
+            excel_sales_demand_units,
+            check_dtype=False,
+            check_index=False,
+            check_series_type=False,
+            check_names=False,
+            check_category_order=False,
+        )
+    except Exception as exeption:
+        # Calculate the difference between the actual and expected grand total
+        difference_row_labels = supply_df["YearPeriodMonth"].compare(
+            excel_df["Row Labels"]
+        )
+        difference_sales_demand_units = supply_df["SalesDemandUnits"].compare(
+            excel_df["Sales Demand Units"]
+        )
+        if not difference_row_labels.empty:
+            print(f"Row Labels: {exeption}\nThere is difference of:\n{difference_row_labels}")
+        if not difference_sales_demand_units.empty:
+            # Rename the columns
+            difference_sales_demand_units.columns = ['SQL', 'Excel']
+            print(f"Sales Demand Units: {exeption}\nThere is difference of:\n{difference_sales_demand_units}")
+    else:
+        print("OK: There is no difference.")
 
 
 if __name__ == "__main__":
