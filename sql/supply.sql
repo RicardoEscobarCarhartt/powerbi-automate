@@ -1,7 +1,4 @@
 -- This query is to be compared to: 'Conectado a Supply.xlsx'
-use CarharttDw;
-GO
-
 SELECT [DT].[ActualDate] as [Version Date],
        [EVT].[YearPeriodMonth],
        SUM(SCP.SalesForecastUnits) 'SalesDemandUnits',
@@ -41,4 +38,4 @@ WHERE
     )    
 GROUP BY [DT].[ActualDate],
          [EVT].[YearPeriodMonth]
-ORDER BY [EVT].[YearPeriodMonth]
+ORDER BY [EVT].[YearPeriodMonth];
