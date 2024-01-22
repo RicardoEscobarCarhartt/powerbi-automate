@@ -12,7 +12,7 @@ def test_pandas():
     print(df)
 
 
-def test_load_excel_supply_no_connection(filename: str | Path = None):
+def load_excel_supply_dataframe(filename: str | Path = None):
     """Test load excel
 
     Args:
