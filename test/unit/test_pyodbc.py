@@ -83,9 +83,12 @@ def get_supply_dataframe(
             # Connect to the database
             connection = pyodbc.connect(connection_string, readonly=True)
             print("Connected to the database.")
+            # If the connection fails raise an error
+            if not is_connection_successful(connection):
+                raise pyodbc.Error("Database connection failed.")
         except pyodbc.Error as e:
             print(f"pyodbc.Error: Database connection failed. {str(e)}")
-            raise e
+            return
 
         cursor = connection.cursor()
 
@@ -118,6 +121,20 @@ def get_supply_dataframe(
             connection.close()
             print("Connection closed.")
 
+
+def is_connection_successful(connection) -> bool:
+    """Check if the connection to the database is successful.
+    Args:
+        connection (pyodbc.Connection): The connection to the database.
+    Returns:
+        bool: True if the connection is successful, False otherwise."""
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT 1")  # Execute a simple query
+        return True
+    except pyodbc.Error as error:
+        print(f"pyodbc.Error: {str(error)}")
+        return False
 
 def filterout_grand_total(df) -> pd.DataFrame:
     """Filter out the grand total row from the DataFrame.
@@ -210,9 +227,9 @@ def main():
         )
     except Exception as exeption:
         # Calculate the difference between the actual and expected values
-        difference_row_labels = supply_df["YearPeriodMonth"].compare(
-            excel_df["Row Labels"]
-        )
+        difference_row_labels = pd.Series(
+            supply_df["YearPeriodMonth"].values
+        ).compare(pd.Series(excel_df["Row Labels"].values))
         difference_sales_demand_units = supply_df["SalesDemandUnits"].compare(
             excel_df["Sales Demand Units"]
         )
@@ -222,7 +239,8 @@ def main():
         difference_planned_production_units = supply_df[
             "PlannedProductionUnits"
         ].compare(excel_df["Planned Production Units"])
-        
+
+        # Print the difference
         if not difference_row_labels.empty:
             # Rename the columns
             difference_row_labels.columns = ["Database", "Excel"]
