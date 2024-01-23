@@ -79,9 +79,14 @@ def get_supply_dataframe(
         # Initialize connection to None
         connection = None
 
-        # Connect to the database
-        connection = pyodbc.connect(connection_string, readonly=True)
-        print("Connected to the database.")
+        try:
+            # Connect to the database
+            connection = pyodbc.connect(connection_string, readonly=True)
+            print("Connected to the database.")
+        except pyodbc.Error as e:
+            print(f"pyodbc.Error: Database connection failed. {str(e)}")
+            raise e
+
         cursor = connection.cursor()
 
         # Execute the query
@@ -129,12 +134,14 @@ def filterout_grand_total(df) -> pd.DataFrame:
 def main():
     """Main function"""
     # Replace these values with your actual database connection details
+    excel_str = (
+        "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
+    )
+    # excel_str = "data/Excel para automatización/verde.xlsx"
     server = os.getenv("SERVER")
     database = os.getenv("DATABASE")
     sql_filepath = Path("sql/supply.sql")
-    excel_filepath = Path(
-        "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
-    )
+    excel_filepath = Path(excel_str)
 
     try:
         # Get the supply data from the excel file and store it in a DataFrame
@@ -156,11 +163,14 @@ def main():
         # SQL columns
         supply_dates = supply_df["YearPeriodMonth"].str.strip()
         supply_sales_demand_units = supply_df["SalesDemandUnits"]
+        supply_total_receipt_plan_units = supply_df["TotalReceiptPlanUnits"]
+        supply_planned_production_units = supply_df["PlannedProductionUnits"]
 
         # Excel columns
         excel_dates = excel_df["Row Labels"].str.strip()
         excel_sales_demand_units = excel_df["Sales Demand Units"]
-
+        excel_total_receipt_plan_units = excel_df["Total Receipt Plan Units"]
+        excel_planned_production_units = excel_df["Planned Production Units"]
 
         # Assert the equality of the dates columns
         pd.testing.assert_series_equal(
@@ -170,7 +180,6 @@ def main():
             check_index=False,
             check_series_type=False,
             check_names=False,
-            check_category_order=False,
         )
         # Assert the equality of the sales demand units columns
         pd.testing.assert_series_equal(
@@ -180,22 +189,66 @@ def main():
             check_index=False,
             check_series_type=False,
             check_names=False,
-            check_category_order=False,
+        )
+        # Assert the equality of the Total Receipt Plan Units columns
+        pd.testing.assert_series_equal(
+            supply_total_receipt_plan_units,
+            excel_total_receipt_plan_units,
+            check_dtype=False,
+            check_index=False,
+            check_series_type=False,
+            check_names=False,
+        )
+        # Assert the equality of the Planned Production Units columns
+        pd.testing.assert_series_equal(
+            supply_planned_production_units,
+            excel_planned_production_units,
+            check_dtype=False,
+            check_index=False,
+            check_series_type=False,
+            check_names=False,
         )
     except Exception as exeption:
-        # Calculate the difference between the actual and expected grand total
+        # Calculate the difference between the actual and expected values
         difference_row_labels = supply_df["YearPeriodMonth"].compare(
             excel_df["Row Labels"]
         )
         difference_sales_demand_units = supply_df["SalesDemandUnits"].compare(
             excel_df["Sales Demand Units"]
         )
+        difference_total_receipt_plan_units = supply_df[
+            "TotalReceiptPlanUnits"
+        ].compare(excel_df["Total Receipt Plan Units"])
+        difference_planned_production_units = supply_df[
+            "PlannedProductionUnits"
+        ].compare(excel_df["Planned Production Units"])
+        
         if not difference_row_labels.empty:
-            print(f"Row Labels: {exeption}\nThere is difference of:\n{difference_row_labels}")
+            # Rename the columns
+            difference_row_labels.columns = ["SQL", "Excel"]
+            print(
+                f"Row Labels: {exeption}\nThere is difference of:\n{difference_row_labels}"
+            )
         if not difference_sales_demand_units.empty:
             # Rename the columns
-            difference_sales_demand_units.columns = ['SQL', 'Excel']
-            print(f"Sales Demand Units: {exeption}\nThere is difference of:\n{difference_sales_demand_units}")
+            difference_sales_demand_units.columns = ["SQL", "Excel"]
+            print(
+                f"Sales Demand Units: {exeption}\nThere is difference of:\n{difference_sales_demand_units}"
+            )
+        if not difference_total_receipt_plan_units.empty:
+            # Rename the columns
+            difference_total_receipt_plan_units.columns = ["SQL", "Excel"]
+            print(
+                f"Total Receipt Plan Units: {exeption}\nThere is difference of:\n{difference_total_receipt_plan_units}"
+            )
+        if not difference_planned_production_units.empty:
+            # Rename the columns
+            difference_planned_production_units.columns = ["SQL", "Excel"]
+            print(
+                f"Planned Production Units: {exeption}\nThere is difference of:\n{difference_planned_production_units}"
+            )
+
+        # TODO: Send an email with the difference
     else:
         print("OK: There is no difference.")
 
