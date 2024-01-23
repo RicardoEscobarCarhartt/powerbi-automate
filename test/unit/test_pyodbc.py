@@ -8,6 +8,8 @@ import pyodbc
 import pandas as pd
 from dotenv import load_dotenv
 
+from test.unit.test_outlook import send_email
+
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -266,7 +268,22 @@ def main():
                 f"Planned Production Units: {exeption}\nThere is difference of:\n{difference_planned_production_units}"
             )
 
-        # TODO: Send an email with the difference
+        # Send an email with the difference
+        database_dataframe = pd.DataFrame(
+            {
+                "YearPeriodMonth": supply_df["YearPeriodMonth"],
+                "SalesDemandUnits": supply_df["SalesDemandUnits"],
+                "TotalReceiptPlanUnits": supply_df["TotalReceiptPlanUnits"],
+                "PlannedProductionUnits": supply_df["PlannedProductionUnits"],
+            }
+        )
+        send_email(
+            subject="Supply Data Difference",
+            body="<p><b>Database:</b>\n\nRepresents what's currently on the database and it's expected to be in PowerBI as well.</p><p><b>PowerBI:</b>\n\nRepresents what's currently in the Excel file exported from a PowerBI dataset and is currently different from the Database data.",
+            to_address="rescobar@carhartt.com",
+            database_dataframe=database_dataframe,
+            powerbi_dataframe=excel_df,
+        )
     else:
         print("OK: There is no difference.")
 
