@@ -137,7 +137,7 @@ def main():
     excel_str = (
         "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
     )
-    # excel_str = "data/Excel para automatización/verde.xlsx"
+
     server = os.getenv("SERVER")
     database = os.getenv("DATABASE")
     sql_filepath = Path("sql/supply.sql")
