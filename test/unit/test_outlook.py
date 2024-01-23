@@ -34,6 +34,7 @@ def send_email(
     outlook = client.Dispatch("Outlook.Application")
     message = outlook.CreateItem(0)
     message.Display()
+    message.Sender = from_address
     message.To = to_address
     message.Subject = subject
     message.Body = body
@@ -46,7 +47,7 @@ def send_email(
 if __name__ == "__main__":
     email_subject = "Test Email"
     email_body = "This is a test email sent from Python."
-    recipient_address = "rescobar@carhartt.com"
+    recipient_address = os.getenv("OUTLOOK_RECIPIENT_EMAIL")
     database_dataframe = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     powerbi_dataframe = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 7]})
 
