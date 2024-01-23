@@ -1,0 +1,188 @@
+"""This module loads supply data from the SQL server database and checks if the
+supply data in the Power BI dataset is up to date."""
+import os
+from pathlib import Path
+from typing import Union
+
+import pyodbc
+import pandas as pd
+from dotenv import load_dotenv
+
+from test.unit.test_outlook import send_email
+
+
+# Load the environment variables from the .env file
+load_dotenv()
+
+
+class SupplyCheck:
+    """This class is used to check if the supply data in the Power BI dataset
+    is up to date."""
+
+    def __init__(
+        self,
+        supply_excel_file: Union[Path, str] = None,
+        supply_excel_sheet: str = "Sheet1",
+        server: str = "DBNSQLPNET",
+        database: str = "CarharttDw",
+        sql_query_filepath: Union[Path, str] = None,
+    ) -> None:
+        """This method is used to initialize the object."""
+        self.supply_excel_file = supply_excel_file
+        self.supply_excel_sheet = supply_excel_sheet
+        self.server = server
+        self.database = database
+        self.sql_query_filepath = sql_query_filepath
+
+        # Validate the supply_excel_file is valid
+        if supply_excel_file:
+            if isinstance(supply_excel_file, str):
+                self.supply_excel_filepath = Path(supply_excel_file)
+            if not isinstance(supply_excel_file, Path):
+                raise ValueError(
+                    "Filename must be a pathlib.Path object or a string to the file path."
+                )
+        else:
+            raise ValueError(
+                "Filename is required. Please use a valid pathlib.Path object or a string to the file path."
+            )
+
+    def get_excel_supply_dataframe(self, filename: str = None, sheet_name: str = None) -> pd.DataFrame:
+        """Load the excel file and store the result in a DataFrame.
+        Returns:
+            pandas.DataFrame: The DataFrame containing the data from the Excel file.
+        """
+        # Validate the filename is valid
+        if filename:
+            if isinstance(filename, str):
+                self.supply_excel_file = Path(filename)
+            if not isinstance(filename, Path):
+                raise ValueError(
+                    "Filename must be a pathlib.Path object or a string to the file path."
+                )
+        else:
+            raise ValueError(
+                "Filename is required. Please use a valid pathlib.Path object or a string to the file path."
+            )
+        
+        # Validate the sheet_name is valid
+        if sheet_name:
+            if not isinstance(sheet_name, str):
+                raise ValueError(
+                    "sheet_name must be a string."
+                )
+            self.supply_excel_sheet = sheet_name
+        elif self.supply_excel_sheet:
+            pass
+        else:
+            raise ValueError(
+                "sheet_name is required. Please use a valid string."
+            )
+
+        # Load the excel file into a pandas DataFrame
+        dataframe = pd.read_excel(
+            self.supply_excel_file, sheet_name=self.supply_excel_sheet
+        )
+
+        # Filter out the grand total row
+        dataframe = self.filterout_grand_total(dataframe)
+
+        # Return the DataFrame
+        return dataframe
+
+    def get_supply_dataframe(
+        self,
+        server: str,
+        database: str,
+        sql_query_filepath: Union[Path, str] = None,
+    ) -> pd.DataFrame:
+        """Execute the SQL query that get's supply data from SQL server and store
+        the result in a DataFrame."""
+        # Connection string for Windows authentication
+        connection_string = f"DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};Trusted_Connection=yes"
+
+        # Validate the SQL query file path is valid
+        if sql_query_filepath:
+            if isinstance(sql_query_filepath, str):
+                sql_query_filepath = Path(sql_query_filepath)
+            if not isinstance(sql_query_filepath, Path):
+                raise ValueError(
+                    "SQL query file path must be a pathlib.Path object or a string to the file path."
+                )
+        else:
+            raise ValueError(
+                "SQL query file path is required. Please use a valid pathlib.Path object or a string to the file path."
+            )
+
+        # Load the SQL query from the file
+        with open(sql_query_filepath, "r", encoding="utf-8") as f:
+            sql_query = f.read()
+
+        try:
+            # Initialize connection to None
+            connection = None
+
+            while connection is None or not self.is_connection_successful(
+                connection
+            ):
+                try:
+                    # Connect to the database
+                    connection = pyodbc.connect(
+                        connection_string, readonly=True
+                    )
+                except Exception:
+                    print(f"Error: Database connection failed. Retrying...")
+                    continue
+
+            print("Connected to the database.")
+            cursor = connection.cursor()
+
+            # Execute the query
+            print("Executing query...")
+            cursor.execute(sql_query)
+
+            # Fetch the results into python list
+            results = cursor.fetchall()
+            print("Fetched the results.")
+
+            # Fetch the results into a pandas DataFrame
+            dataframe = pd.DataFrame.from_records(
+                results, columns=[column[0] for column in cursor.description]
+            )
+
+            # Return the DataFrame
+            return dataframe
+        except pyodbc.Error as e:
+            print(f"pyodbc.Error: {str(e)}")
+        except Exception as e:
+            print(f"Error: {str(e)}")
+
+        finally:
+            # Close the connection
+            if connection is not None:
+                connection.close()
+                print("Connection closed.")
+
+    def is_connection_successful(self, connection) -> bool:
+        """Check if the connection to the database is successful.
+        Args:
+            connection (pyodbc.Connection): The connection to the database.
+        Returns:
+            bool: True if the connection is successful, False otherwise."""
+        try:
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")  # Execute a simple query
+            return True
+        except Exception:
+            return False
+
+    def filterout_grand_total(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """Filter out the grand total row from the DataFrame.
+        Args:
+            df (pd.DataFrame): The DataFrame to filter.
+        Returns:
+            pd.DataFrame: The filtered DataFrame."""
+        # Filter out rows based on your criteria
+        # For example, exclude rows where 'Row Labels' is not 'Grand Total'
+        filtered_dataframe = dataframe[dataframe["Row Labels"] != "Grand Total"]
+        return filtered_dataframe
