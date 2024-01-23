@@ -225,25 +225,25 @@ def main():
         
         if not difference_row_labels.empty:
             # Rename the columns
-            difference_row_labels.columns = ["SQL", "Excel"]
+            difference_row_labels.columns = ["Database", "Excel"]
             print(
                 f"Row Labels: {exeption}\nThere is difference of:\n{difference_row_labels}"
             )
         if not difference_sales_demand_units.empty:
             # Rename the columns
-            difference_sales_demand_units.columns = ["SQL", "Excel"]
+            difference_sales_demand_units.columns = ["Database", "Excel"]
             print(
                 f"Sales Demand Units: {exeption}\nThere is difference of:\n{difference_sales_demand_units}"
             )
         if not difference_total_receipt_plan_units.empty:
             # Rename the columns
-            difference_total_receipt_plan_units.columns = ["SQL", "Excel"]
+            difference_total_receipt_plan_units.columns = ["Database", "Excel"]
             print(
                 f"Total Receipt Plan Units: {exeption}\nThere is difference of:\n{difference_total_receipt_plan_units}"
             )
         if not difference_planned_production_units.empty:
             # Rename the columns
-            difference_planned_production_units.columns = ["SQL", "Excel"]
+            difference_planned_production_units.columns = ["Database", "Excel"]
             print(
                 f"Planned Production Units: {exeption}\nThere is difference of:\n{difference_planned_production_units}"
             )
