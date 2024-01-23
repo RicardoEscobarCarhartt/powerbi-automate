@@ -81,17 +81,15 @@ def get_supply_dataframe(
         # Initialize connection to None
         connection = None
 
-        try:
-            # Connect to the database
-            connection = pyodbc.connect(connection_string, readonly=True)
-            print("Connected to the database.")
-            # If the connection fails raise an error
-            if not is_connection_successful(connection):
-                raise pyodbc.Error("Database connection failed.")
-        except pyodbc.Error as e:
-            print(f"pyodbc.Error: Database connection failed. {str(e)}")
-            return
+        while connection is None or not is_connection_successful(connection):
+            try:
+                # Connect to the database
+                connection = pyodbc.connect(connection_string, readonly=True)
+            except Exception as e:
+                print(f"Error: Database connection failed. {str(e)}")
+                continue
 
+        print("Connected to the database.")
         cursor = connection.cursor()
 
         # Execute the query
@@ -134,8 +132,8 @@ def is_connection_successful(connection) -> bool:
         cursor = connection.cursor()
         cursor.execute("SELECT 1")  # Execute a simple query
         return True
-    except pyodbc.Error as error:
-        print(f"pyodbc.Error: {str(error)}")
+    except Exception as error:
+        print(f"Error: {str(error)}")
         return False
 
 def filterout_grand_total(df) -> pd.DataFrame:
@@ -152,7 +150,7 @@ def filterout_grand_total(df) -> pd.DataFrame:
 
 def main():
     """Main function"""
-    # Replace these values with your actual database connection details
+    # The path to the excel file containing the supply data
     excel_str = (
         "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
     )
