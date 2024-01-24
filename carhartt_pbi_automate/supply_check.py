@@ -67,30 +67,12 @@ class SupplyCheck:
         Returns:
             pandas.DataFrame: The DataFrame containing the data from the Excel file.
         """
-        # Validate the filename is valid
+        # If optional arguments are provided, use them to replace the default
+        # values
         if filename:
-            if isinstance(filename, str):
-                self.supply_excel_file = Path(filename)
-            if not isinstance(filename, Path):
-                raise ValueError(
-                    "Filename must be a pathlib.Path object or a string to the file path."
-                )
-        else:
-            raise ValueError(
-                "Filename is required. Please use a valid pathlib.Path object or a string to the file path."
-            )
-
-        # Validate the sheet_name is valid
+            self.supply_excel_file = self.get_filepath(filename)
         if sheet_name:
-            if not isinstance(sheet_name, str):
-                raise ValueError("sheet_name must be a string.")
             self.supply_excel_sheet = sheet_name
-        elif self.supply_excel_sheet:
-            pass
-        else:
-            raise ValueError(
-                "sheet_name is required. Please use a valid string."
-            )
 
         # Load the excel file into a pandas DataFrame
         dataframe = pd.read_excel(
@@ -116,16 +98,7 @@ class SupplyCheck:
 
         # Validate the SQL query file path is valid
         if sql_query_filepath:
-            if isinstance(sql_query_filepath, str):
-                sql_query_filepath = Path(sql_query_filepath)
-            if not isinstance(sql_query_filepath, Path):
-                raise ValueError(
-                    "SQL query file path must be a pathlib.Path object or a string to the file path."
-                )
-        else:
-            raise ValueError(
-                "SQL query file path is required. Please use a valid pathlib.Path object or a string to the file path."
-            )
+            self.sql_query_filepath = self.get_filepath(sql_query_filepath)
 
         # Load the SQL query from the file
         with open(sql_query_filepath, "r", encoding="utf-8") as f:
