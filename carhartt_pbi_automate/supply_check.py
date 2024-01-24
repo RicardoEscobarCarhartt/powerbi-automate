@@ -51,7 +51,10 @@ class SupplyCheck:
                 if file.exists() and file.is_file():
                     return file
             else:
-                return None
+                raise ValueError(
+                    "File must be a pathlib.Path object or a string to the file path."
+                )
+        return None
 
     def get_excel_supply_dataframe(
         self, filename: str = None, sheet_name: str = None
