@@ -34,7 +34,8 @@ class SupplyCheck:
         self.database = database
         self.sql_query_filepath = self.get_filepath(sql_query_file)
 
-    def get_filepath(self, file: Union[Path, str]) -> Union[Path, None]:
+    @staticmethod
+    def get_filepath(file: Union[Path, str]) -> Union[Path, None]:
         """This method returns the filepath if the file is valid, otherwise returns None.
         Args:
             file (Union[Path, str]): The file to validate.
