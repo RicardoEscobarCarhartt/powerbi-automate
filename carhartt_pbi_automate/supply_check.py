@@ -91,10 +91,15 @@ class SupplyCheck:
         database: str,
         sql_query_filepath: Union[Path, str] = None,
     ) -> pd.DataFrame:
-        """Execute the SQL query that get's supply data from SQL server and store
-        the result in a DataFrame."""
+        """Execute the SQL query that get's supply data from SQL server and
+        store the result in a DataFrame."""
         # Connection string for Windows authentication
-        connection_string = f"DRIVER=ODBC Driver 17 for SQL Server;SERVER={server};DATABASE={database};Trusted_Connection=yes"
+        connection_string = (
+            f"DRIVER=ODBC Driver 17 for SQL Server;"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            f"Trusted_Connection=yes"
+        )
 
         # Validate the SQL query file path is valid
         if sql_query_filepath:
@@ -148,6 +153,8 @@ class SupplyCheck:
             if connection is not None:
                 connection.close()
                 print("Connection closed.")
+
+        return None
 
     def is_connection_successful(self, connection) -> bool:
         """Check if the connection to the database is successful.
