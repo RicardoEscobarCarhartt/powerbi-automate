@@ -121,9 +121,12 @@ class SupplyCheck:
                     connection = pyodbc.connect(
                         connection_string, readonly=True
                     )
-                except Exception:
-                    print(f"Error: Database connection failed. Retrying...")
+                except pyodbc.Error:
+                    print("Error: Database connection failed. Retrying...")
                     continue
+                except Exception as e:
+                    print(f"Error: {str(e)}")
+                    break
 
             print("Connected to the database.")
             cursor = connection.cursor()
