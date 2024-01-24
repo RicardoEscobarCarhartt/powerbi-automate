@@ -122,10 +122,10 @@ class SupplyData:
                         connection_string, readonly=True
                     )
                 except pyodbc.Error:
-                    print("Error: Database connection failed. Retrying...")
+                    print("Error: Database connection failed. Retrying...\n")
                     continue
                 except Exception as e:
-                    print(f"Error: {str(e)}")
+                    print(f"Error: Database connection failed. {str(e)}")
                     break
 
             print("Connected to the database.")
@@ -184,3 +184,14 @@ class SupplyData:
             dataframe["Row Labels"] != "Grand Total"
         ]
         return filtered_dataframe
+
+    def check(self):
+        """Check comparing that the Excel file and the SQL query return the
+        same dataset. If there are differences, send an email."""
+        # Get the supply data from the excel file and store it in a DataFrame
+        excel_dataframe = self.get_excel_supply_dataframe()
+
+        # Get the supply data from the database and store it in a DataFrame
+        database_dataframe = self.get_supply_dataframe(
+            self.server, self.database, self.sql_query_filepath
+        )
