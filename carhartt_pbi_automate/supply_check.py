@@ -35,12 +35,14 @@ class SupplyCheck:
         self.sql_query_filepath = self.get_filepath(sql_query_file)
 
     @staticmethod
-    def get_filepath(file: Union[Path, str]) -> Union[Path, None]:
-        """This method returns the filepath if the file is valid, otherwise returns None.
+    def get_filepath(file: Union[Path, str]) -> Path:
+        """This method returns the filepath if the file is valid, otherwise raises an error.
         Args:
             file (Union[Path, str]): The file to validate.
         Returns:
-            Union[Path, None]: The filepath if the file is valid, otherwise None."""
+            Union[Path, None]: The filepath if the file is valid.
+        Raises:
+            ValueError: If the file is invalid."""
         # Validate the sql_query_file is valid
         if file:
             if isinstance(file, str):
@@ -54,7 +56,9 @@ class SupplyCheck:
                 raise ValueError(
                     "File must be a pathlib.Path object or a string to the file path."
                 )
-        return None
+        raise ValueError(
+            "File is required. Please use a valid pathlib.Path object or a string to the file path."
+        )
 
     def get_excel_supply_dataframe(
         self, filename: str = None, sheet_name: str = None
