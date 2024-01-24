@@ -25,29 +25,36 @@ class SupplyCheck:
         supply_excel_sheet: str = "Sheet1",
         server: str = "DBNSQLPNET",
         database: str = "CarharttDw",
-        sql_query_filepath: Union[Path, str] = None,
+        sql_query_file: Union[Path, str] = None,
     ) -> None:
         """This method is used to initialize the object."""
-        self.supply_excel_file = supply_excel_file
+        self.supply_excel_file = self.get_filepath(supply_excel_file)
         self.supply_excel_sheet = supply_excel_sheet
         self.server = server
         self.database = database
-        self.sql_query_filepath = sql_query_filepath
+        self.sql_query_filepath = self.get_filepath(sql_query_file)
 
-        # Validate the supply_excel_file is valid
-        if supply_excel_file:
-            if isinstance(supply_excel_file, str):
-                self.supply_excel_filepath = Path(supply_excel_file)
-            if not isinstance(supply_excel_file, Path):
-                raise ValueError(
-                    "Filename must be a pathlib.Path object or a string to the file path."
-                )
-        else:
-            raise ValueError(
-                "Filename is required. Please use a valid pathlib.Path object or a string to the file path."
-            )
+    def get_filepath(self, file: Union[Path, str]) -> Union[Path, None]:
+        """This method returns the filepath if the file is valid, otherwise returns None.
+        Args:
+            file (Union[Path, str]): The file to validate.
+        Returns:
+            Union[Path, None]: The filepath if the file is valid, otherwise None."""
+        # Validate the sql_query_file is valid
+        if file:
+            if isinstance(file, str):
+                filepath = Path(file)
+                if filepath.exists() and filepath.is_file():
+                    return filepath
+            elif isinstance(file, Path):
+                if file.exists() and file.is_file():
+                    return file
+            else:
+                return None
 
-    def get_excel_supply_dataframe(self, filename: str = None, sheet_name: str = None) -> pd.DataFrame:
+    def get_excel_supply_dataframe(
+        self, filename: str = None, sheet_name: str = None
+    ) -> pd.DataFrame:
         """Load the excel file and store the result in a DataFrame.
         Returns:
             pandas.DataFrame: The DataFrame containing the data from the Excel file.
@@ -64,13 +71,11 @@ class SupplyCheck:
             raise ValueError(
                 "Filename is required. Please use a valid pathlib.Path object or a string to the file path."
             )
-        
+
         # Validate the sheet_name is valid
         if sheet_name:
             if not isinstance(sheet_name, str):
-                raise ValueError(
-                    "sheet_name must be a string."
-                )
+                raise ValueError("sheet_name must be a string.")
             self.supply_excel_sheet = sheet_name
         elif self.supply_excel_sheet:
             pass
@@ -184,5 +189,7 @@ class SupplyCheck:
             pd.DataFrame: The filtered DataFrame."""
         # Filter out rows based on your criteria
         # For example, exclude rows where 'Row Labels' is not 'Grand Total'
-        filtered_dataframe = dataframe[dataframe["Row Labels"] != "Grand Total"]
+        filtered_dataframe = dataframe[
+            dataframe["Row Labels"] != "Grand Total"
+        ]
         return filtered_dataframe
