@@ -15,7 +15,7 @@ from test.unit.test_outlook import send_email
 load_dotenv()
 
 
-class SupplyCheck:
+class SupplyData:
     """This class is used to check if the supply data in the Power BI dataset
     is up to date."""
 
@@ -169,7 +169,7 @@ class SupplyCheck:
             cursor = connection.cursor()
             cursor.execute("SELECT 1")  # Execute a simple query
             return True
-        except Exception:
+        except pyodbc.Error:
             return False
 
     def filterout_grand_total(self, dataframe: pd.DataFrame) -> pd.DataFrame:
