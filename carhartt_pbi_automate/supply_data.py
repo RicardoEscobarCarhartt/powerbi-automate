@@ -87,8 +87,8 @@ class SupplyData:
 
     def get_supply_dataframe(
         self,
-        server: str,
-        database: str,
+        server: str = None,
+        database: str = None,
         sql_query_filepath: Union[Path, str] = None,
     ) -> pd.DataFrame:
         """Execute the SQL query that get's supply data from SQL server and
@@ -101,12 +101,16 @@ class SupplyData:
             f"Trusted_Connection=yes"
         )
 
-        # Validate the SQL query file path is valid
+        # Validate the optional arguments if provided
+        if server:
+            self.server = server
+        if database:
+            self.database = database
         if sql_query_filepath:
             self.sql_query_filepath = self.get_filepath(sql_query_filepath)
 
         # Load the SQL query from the file
-        with open(sql_query_filepath, "r", encoding="utf-8") as f:
+        with open(self.sql_query_filepath, "r", encoding="utf-8") as f:
             sql_query = f.read()
 
         try:
@@ -188,10 +192,102 @@ class SupplyData:
     def check(self):
         """Check comparing that the Excel file and the SQL query return the
         same dataset. If there are differences, send an email."""
+        # Harcoded column names for now
+        excel_column_names = [
+            "Row Labels",
+            "Sales Demand Units",
+            "Total Receipt Plan Units",
+            "Planned Production Units",
+        ]
+        database_column_names = [
+            "YearPeriodMonth",
+            "SalesDemandUnits",
+            "TotalReceiptPlanUnits",
+            "PlannedProductionUnits",
+        ]
+
         # Get the supply data from the excel file and store it in a DataFrame
         excel_dataframe = self.get_excel_supply_dataframe()
 
         # Get the supply data from the database and store it in a DataFrame
-        database_dataframe = self.get_supply_dataframe(
-            self.server, self.database, self.sql_query_filepath
-        )
+        database_dataframe = self.get_supply_dataframe()
+
+        # Database dataframe
+        excel_series = []
+        database_series = []
+
+        # Strip whitespace from the string columns
+        for column_name in excel_column_names:
+            if (
+                excel_dataframe[column_name].dtype == "object"
+            ):  # 'object' typically means strings in pandas
+                excel_series.append(excel_dataframe[column_name].str.strip())
+            else:
+                excel_series.append(excel_dataframe[column_name])
+
+        for column_name in database_column_names:
+            if (
+                database_dataframe[column_name].dtype == "object"
+            ):  # 'object' typically means strings in pandas
+                database_series.append(
+                    database_dataframe[column_name].str.strip()
+                )
+            else:
+                database_series.append(database_dataframe[column_name])
+
+        # Create a list of tuples of the excel and database series
+        # to iterate over them and assert the equality of the columns
+        for excel_column, database_column in zip(
+            excel_series, database_series
+        ):
+            try:
+                # Assert the equality of the columns
+                pd.testing.assert_series_equal(
+                    excel_column,
+                    database_column,
+                    check_dtype=False,
+                    check_index=False,
+                    check_series_type=False,
+                    check_names=False,
+                )
+            except AssertionError:
+                # Send an email with the difference
+                email_database_dataframe = pd.DataFrame(
+                    {
+                        "YearPeriodMonth": database_dataframe[
+                            "YearPeriodMonth"
+                        ],
+                        "SalesDemandUnits": database_dataframe[
+                            "SalesDemandUnits"
+                        ],
+                        "TotalReceiptPlanUnits": database_dataframe[
+                            "TotalReceiptPlanUnits"
+                        ],
+                        "PlannedProductionUnits": database_dataframe[
+                            "PlannedProductionUnits"
+                        ],
+                    }
+                )
+                send_email(
+                    subject="Supply Data Mismatch",
+                    body="<p><b>Database:</b>\n\nRepresents what's currently on the database and it's expected to be in PowerBI as well.</p><p><b>PowerBI:</b>\n\nRepresents what's currently in the Excel file exported from a PowerBI dataset and is currently different from the Database data.",
+                    to_address=os.getenv("OUTLOOK_RECIPIENT_EMAIL"),
+                    database_dataframe=email_database_dataframe,
+                    powerbi_dataframe=excel_dataframe,
+                )
+            else:
+                print("OK: There is no difference.")
+
+
+if __name__ == "__main__":
+    # Create an instance of the SupplyData class
+    EXCEL_FILE = Path(
+        "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
+    )
+    SQL_FILE = Path("sql/supply.sql")
+    supply_data = SupplyData(
+        supply_excel_file=EXCEL_FILE, sql_query_file=SQL_FILE
+    )
+
+    # Check if the supply data in the Power BI dataset is up to date
+    supply_data.check()

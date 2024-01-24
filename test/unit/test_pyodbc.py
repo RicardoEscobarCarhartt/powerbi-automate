@@ -161,7 +161,7 @@ def main():
     sql_filepath = Path("sql/supply.sql")
     excel_filepath = Path(excel_str)
 
-    # TODO: Refactor this code into a new method from supply_check.SupplyCheck class
+    # DONE: Refactor this code into a new method from supply_check.SupplyCheck class
     try:
         # Get the supply data from the excel file and store it in a DataFrame
         excel_df = get_excel_supply_dataframe(excel_filepath, "Sheet1")
@@ -284,7 +284,7 @@ def main():
         send_email(
             subject="Supply Data Difference",
             body="<p><b>Database:</b>\n\nRepresents what's currently on the database and it's expected to be in PowerBI as well.</p><p><b>PowerBI:</b>\n\nRepresents what's currently in the Excel file exported from a PowerBI dataset and is currently different from the Database data.",
-            to_address="rescobar@carhartt.com",
+            to_address=os.getenv("OUTLOOK_RECIPIENT_EMAIL"),
             database_dataframe=database_dataframe,
             powerbi_dataframe=excel_df,
         )
