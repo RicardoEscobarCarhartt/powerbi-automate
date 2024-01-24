@@ -150,6 +150,7 @@ def filterout_grand_total(df) -> pd.DataFrame:
 
 def main():
     """Main function"""
+    # TODO: Refactor this into a constructor call from supply_check.SupplyCheck class
     # The path to the excel file containing the supply data
     excel_str = (
         "data/Excel para automatización/Sin conexión a Supply-solo datos.xlsx"
@@ -160,6 +161,7 @@ def main():
     sql_filepath = Path("sql/supply.sql")
     excel_filepath = Path(excel_str)
 
+    # TODO: Refactor this code into a new method from supply_check.SupplyCheck class
     try:
         # Get the supply data from the excel file and store it in a DataFrame
         excel_df = get_excel_supply_dataframe(excel_filepath, "Sheet1")
@@ -176,8 +178,12 @@ def main():
     # Assert the '[YearPeriodMonth]' column in the supply_df is equal to the
     # 'Row Labels' column in the excel_df. Excluding the column names.
     try:
+        # TODO: Refactor this code into a new method from supply_check.SupplyCheck class
         # Extract the relevant columns and clean them for comparison
         # SQL columns
+        # TODO: implement a value type check to strip the whitespace only if the value is a string
+        # if supply_df["YearPeriodMonth"].dtype == 'object':  # 'object' typically means strings in pandas
+        #     supply_dates = supply_df["YearPeriodMonth"].str.strip()
         supply_dates = supply_df["YearPeriodMonth"].str.strip()
         supply_sales_demand_units = supply_df["SalesDemandUnits"]
         supply_total_receipt_plan_units = supply_df["TotalReceiptPlanUnits"]
