@@ -18,7 +18,7 @@ class MyLogger(logging.Logger):
         log_to_console: bool = True,
         log_to_file: bool = True,
         log_to_database: bool = True,
-        database: Union[Database, str] = None,
+        database: Union[Database, Path, str] = None,
     ):
         """Initialize the logger."""
         super().__init__(name, level)
@@ -56,6 +56,8 @@ class MyLogger(logging.Logger):
                 elif isinstance(database, str):
                     database_path = Path(database)
                     self.database = Database(database_path)
+                elif isinstance(database, Path):
+                    self.database = Database(database)
                 else:
                     raise TypeError("database must be a Database or str")
             else:
