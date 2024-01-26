@@ -3,16 +3,30 @@ supply data in the Power BI dataset is up to date."""
 import os
 from pathlib import Path
 from typing import Union
+import logging
 
 import pyodbc
 import pandas as pd
 from dotenv import load_dotenv
 
 from test.unit.test_outlook import send_email
+from carhartt_pbi_automate.my_logger import MyLogger
 
 
 # Load the environment variables from the .env file
 load_dotenv()
+
+# Create a logger object, used to log messages in the console, a file and a
+# database
+log = MyLogger(
+    name="carhartt_pbi_automate.supply_data",
+    log_file=Path("logs/supply_data.log"),
+    level=logging.INFO,
+    log_to_console=True,
+    log_to_file=True,
+    log_to_database=True,
+    database=Path("database/logging.db"),
+)
 
 
 class SupplyData:
@@ -126,22 +140,26 @@ class SupplyData:
                         connection_string, readonly=True
                     )
                 except pyodbc.Error:
-                    print("Error: Database connection failed. Retrying...\n")
+                    log.error(
+                        "Error: Database connection failed. Retrying...\n"
+                    )
                     continue
                 except Exception as e:
-                    print(f"Error: Database connection failed. {str(e)}")
+                    log.critical(
+                        "Critical: Database connection failed. %s", str(e)
+                    )
                     break
 
-            print("Connected to the database.")
+            log.info("Connected to the database.")
             cursor = connection.cursor()
 
             # Execute the query
-            print("Executing query...")
+            log.info("Executing query...")
             cursor.execute(sql_query)
 
             # Fetch the results into python list
             results = cursor.fetchall()
-            print("Fetched the results.")
+            log.info("Fetched the results.")
 
             # Fetch the results into a pandas DataFrame
             dataframe = pd.DataFrame.from_records(
@@ -151,15 +169,15 @@ class SupplyData:
             # Return the DataFrame
             return dataframe
         except pyodbc.Error as e:
-            print(f"pyodbc.Error: {str(e)}")
+            log.error("pyodbc.Error: %s", {str(e)})
         except Exception as e:
-            print(f"Error: {str(e)}")
+            log.critical("Critical: %s", str(e))
 
         finally:
             # Close the connection
             if connection is not None:
                 connection.close()
-                print("Connection closed.")
+                log.info("Connection closed.")
 
         return None
 
@@ -276,7 +294,7 @@ class SupplyData:
                     powerbi_dataframe=excel_dataframe,
                 )
             else:
-                print("OK: There is no difference.")
+                log.info("OK: There is no difference.")
 
 
 if __name__ == "__main__":
