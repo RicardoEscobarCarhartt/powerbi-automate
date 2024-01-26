@@ -19,6 +19,7 @@ class MyLogger(logging.Logger):
         log_to_file: bool = True,
         log_to_database: bool = True,
         database: Union[Database, Path, str] = None,
+        initial_database_script: Union[str, Path] = "database/logging.sql",
     ):
         """Initialize the logger."""
         super().__init__(name, level)
@@ -47,6 +48,23 @@ class MyLogger(logging.Logger):
             self.addHandler(self.stream_handler)
             self.info("Console logging enabled")
 
+        # Validate the initial_database_script argument
+        if isinstance(initial_database_script, str):
+            initial_database_script = Path(initial_database_script)
+        if not isinstance(initial_database_script, Path):
+            raise TypeError(
+                (
+                    f"initial_database_script must be a Path or str,"
+                    f" not {type(initial_database_script)}"
+                )
+            )
+        if not initial_database_script.exists():
+            raise FileNotFoundError(
+                f"initial_database_script not found at {initial_database_script}"
+            )
+        else:
+            self.initial_database_script = initial_database_script
+
         # Create a database handler to write to a database
         self.database = None
         if log_to_database:
@@ -56,8 +74,19 @@ class MyLogger(logging.Logger):
                 elif isinstance(database, str):
                     database_path = Path(database)
                     self.database = Database(database_path)
+                    # Check if database file exists and contains the correct
+                    # table "log_record"
+                    if not self.database.table_exists("log_record"):
+                        self.database.close()
+                        self.database = Database(
+                            database_path, self.initial_database_script
+                        )
                 elif isinstance(database, Path):
-                    self.database = Database(database)
+                    self.database = Database(database, self.initial_database_script)
+                    # Create the database file if it does not exist
+                    if not database.exists():
+                        database.parent.mkdir(parents=True, exist_ok=True)
+                        self.database = Database(database)
                 else:
                     raise TypeError("database must be a Database or str")
             else:
@@ -70,13 +99,14 @@ class MyLogger(logging.Logger):
                     self.warning(
                         "Unable to open database at %s: %s",
                         database_path,
-                        exeption
+                        exeption,
                     )
                     # Create an empty database object
                     self.database = Database(":memory:")
-                    self.database = None
 
-            self.database = database
+            # TODO: Replace this with a check to see if the database is an
+            # actual Database object
+            # self.database = database
             self.sqlite_handler = SqliteHandler(self.database)
             self.sqlite_handler.setLevel(level)
             self.addHandler(self.sqlite_handler)
