@@ -19,8 +19,15 @@ class Database:
                 self.initial_sql_script = initial_sql_script
             elif isinstance(initial_sql_script, str):
                 self.initial_sql_script = Path(initial_sql_script)
-            self.initial_sql_script.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                raise TypeError(
+                    (
+                        f"initial_sql_script must be a Path or str."
+                        f"Not {type(initial_sql_script)}"
+                    )
+                )
 
+            self.initial_sql_script.parent.mkdir(parents=True, exist_ok=True)
             with open(
                 self.initial_sql_script, "r", encoding="utf-8"
             ) as sql_script:
@@ -28,6 +35,10 @@ class Database:
                 self.conn = sqlite3.connect(db_file)
                 self.conn.executescript(sql)
                 self.conn.commit()
+        else:
+            raise TypeError(
+                "initial_sql_script must be a Path or str. not None"
+            )
 
         if isinstance(db_file, str):
             if db_file == ":memory:":
@@ -115,3 +126,8 @@ class Database:
         # returned to a list of strings.
         result = [table[0] for table in tables if table != "sqlite_sequence"]
         return result
+    
+    def table_exists(self, table_name: str) -> bool:
+        """Return True if the table exists in the database."""
+        tables = self.get_tables()
+        return table_name in tables
