@@ -14,6 +14,8 @@ class Database:
         initial_sql_script: Path = None,
     ):
         """Initialize the database."""
+        self.conn = None
+        self.cursor = None
         if initial_sql_script:
             if isinstance(initial_sql_script, Path):
                 self.initial_sql_script = initial_sql_script
@@ -35,10 +37,7 @@ class Database:
                 self.conn = sqlite3.connect(db_file)
                 self.conn.executescript(sql)
                 self.conn.commit()
-        else:
-            raise TypeError(
-                "initial_sql_script must be a Path or str. not None"
-            )
+                self.conn.close()
 
         if isinstance(db_file, str):
             if db_file == ":memory:":
@@ -50,7 +49,6 @@ class Database:
             self.db_file.parent.mkdir(parents=True, exist_ok=True)
         else:
             raise TypeError("db_file must be a Path or str")
-
 
     def create_table(self, table_name: str, columns: List[str]):
         """Create a table in the database."""
@@ -118,7 +116,8 @@ class Database:
 
     def close(self):
         """Close the database."""
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
 
     def get_columns(self, table_name: str) -> List[str]:
         """Return a list of columns in the table."""
@@ -137,14 +136,13 @@ class Database:
             "SELECT name FROM sqlite_master WHERE type='table'"
         )
         tables = self.cursor.fetchall()
-        self.conn.close()
 
         # This list comprehension is used to convert the list of tuples
         # returned to a list of strings.
         result = [table[0] for table in tables if table != "sqlite_sequence"]
         self.close()
         return result
-    
+
     def table_exists(self, table_name: str) -> bool:
         """Return True if the table exists in the database."""
         tables = self.get_tables()
