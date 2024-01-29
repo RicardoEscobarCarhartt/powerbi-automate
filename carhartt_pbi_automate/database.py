@@ -51,33 +51,37 @@ class Database:
         else:
             raise TypeError("db_file must be a Path or str")
 
-        self.conn = sqlite3.connect(self.db_file)
-        self.conn.row_factory = sqlite3.Row
-        self.cursor = self.conn.cursor()
 
     def create_table(self, table_name: str, columns: List[str]):
         """Create a table in the database."""
+        self.open()
         columns = ", ".join(columns)
         sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns})"
         self.cursor.execute(sql)
         self.conn.commit()
+        self.close()
 
     def insert(self, table_name: str, columns: List[str], values: List[str]):
         """Insert a row into the database."""
+        self.open()
         columns = ", ".join(columns)
         values_placeholders = ", ".join(["?" for _ in range(len(values))])
         sql = f"INSERT INTO {table_name} ({columns}) VALUES ({values_placeholders})"
         self.cursor.execute(sql, values)
         self.conn.commit()
+        self.close()
 
     def select(self, table_name: str, columns: List[str], where: str = None):
         """Select rows from the database."""
+        self.open()
         columns = ", ".join(columns)
         sql = f"SELECT {columns} FROM {table_name}"
         if where:
             sql += f" WHERE {where}"
         self.cursor.execute(sql)
-        return self.cursor.fetchall()
+        result = self.cursor.fetchall()
+        self.close()
+        return result
 
     def update(
         self,
@@ -87,20 +91,30 @@ class Database:
         where: str = None,
     ):
         """Update rows in the database."""
+        self.open()
         columns = ", ".join([f"{col} = ?" for col in columns])
         sql = f"UPDATE {table_name} SET {columns}"
         if where:
             sql += f" WHERE {where}"
         self.cursor.execute(sql, values)
         self.conn.commit()
+        self.close()
 
     def delete(self, table_name: str, where: str = None):
         """Delete rows from the database."""
+        self.open()
         sql = f"DELETE FROM {table_name}"
         if where:
             sql += f" WHERE {where}"
         self.cursor.execute(sql)
         self.conn.commit()
+        self.close()
+
+    def open(self):
+        """Open a database connection."""
+        self.conn = sqlite3.connect(self.db_file)
+        self.conn.row_factory = sqlite3.Row
+        self.cursor = self.conn.cursor()
 
     def close(self):
         """Close the database."""
@@ -108,14 +122,17 @@ class Database:
 
     def get_columns(self, table_name: str) -> List[str]:
         """Return a list of columns in the table."""
+        self.open()
         sql = f"PRAGMA table_info({table_name});"
         self.cursor.execute(sql)
         columns = self.cursor.fetchall()
         result = [column["name"] for column in columns]
+        self.close()
         return result
 
     def get_tables(self) -> List[str]:
         """Return a list of tables in the database."""
+        self.open()
         self.cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         )
@@ -125,6 +142,7 @@ class Database:
         # This list comprehension is used to convert the list of tuples
         # returned to a list of strings.
         result = [table[0] for table in tables if table != "sqlite_sequence"]
+        self.close()
         return result
     
     def table_exists(self, table_name: str) -> bool:
