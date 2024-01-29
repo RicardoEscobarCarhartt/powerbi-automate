@@ -28,6 +28,7 @@ class TestMyLogger(unittest.TestCase):
         self.logger.close()
         self.database.close()
         self.log_file.unlink()
+        self.database.db_file.unlink()
 
     def test_logger_init(self):
         """Test that the logger is initialized correctly"""
@@ -96,6 +97,7 @@ class TestMyLogger(unittest.TestCase):
         test_logger.info("This is a test")
         
         self.assertTrue(test_db.exists())
+        test_db.unlink()
 
 
 if __name__ == "__main__":
