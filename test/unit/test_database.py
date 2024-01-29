@@ -10,7 +10,7 @@ class TestDatabase(unittest.TestCase):
 
     def setUp(self):
         """Set up the test."""
-        self.db = Database(":memory:")
+        self.db = Database("database/test_database.db")
 
     def tearDown(self):
         """Tear down the test."""
@@ -21,13 +21,15 @@ class TestDatabase(unittest.TestCase):
     def test_database_init(self):
         """Test the Database.__init__ method."""
         self.assertIsInstance(self.db, Database)
-        self.assertEqual(self.db.db_file, ":memory:")
+        self.assertEqual(str(self.db.db_file), "database\\test_database.db")
 
         # Test that the database file is created if a file path is passed as str
         self.db = Database("test.db")
+        self.db.open()
         self.assertEqual(str(self.db.db_file), "test.db")
         self.assertTrue(self.db.db_file.exists())
         self.db.close()
+        self.db.db_file.unlink()
 
         # Test that the database file is created if a file path is passed as Path
         self.db = Database(Path("test.db"))
@@ -41,10 +43,12 @@ class TestDatabase(unittest.TestCase):
     def test_create_table(self):
         """Test the create_table method."""
         self.db.create_table("test", ["id INTEGER PRIMARY KEY", "name TEXT"])
+        self.db.open()
         self.db.cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         )
         tables = self.db.cursor.fetchall()
+        self.db.close()
         self.assertEqual(len(tables), 1)
         self.assertEqual(tables[0]["name"], "test")
 
@@ -52,8 +56,10 @@ class TestDatabase(unittest.TestCase):
         """Test the insert method."""
         self.db.create_table("test", ["id INTEGER PRIMARY KEY", "name TEXT"])
         self.db.insert("test", ["name"], ["test"])
+        self.db.open()
         self.db.cursor.execute("SELECT * FROM test")
         rows = self.db.cursor.fetchall()
+        self.db.close()
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["name"], "test")
 
