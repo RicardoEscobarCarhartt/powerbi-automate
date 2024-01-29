@@ -28,15 +28,18 @@ class TestSqliteHandler(unittest.TestCase):
         self.logger.close()
         self.database.close()
         self.log_file.unlink()
-        # self.database.db_file.unlink()
+        self.database.db_file.unlink()
 
     def test_emit(self):
         """Test that the emit method is working correctly"""
         self.logger.info("Test message")
         sql_query = "SELECT * FROM log_record where message = 'Test message'"
+        self.database.open()
         cursor = self.database.cursor.execute(sql_query)
         row = cursor.fetchone()
+        self.database.close()
         self.assertEqual(row["message"], "Test message")
-        
+
+
 if __name__ == "__main__":
     unittest.main()

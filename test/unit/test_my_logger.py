@@ -28,6 +28,7 @@ class TestMyLogger(unittest.TestCase):
         self.logger.close()
         self.database.close()
         self.log_file.unlink()
+        self.database.db_file.unlink()
 
     def test_logger_init(self):
         """Test that the logger is initialized correctly"""
@@ -76,6 +77,27 @@ class TestMyLogger(unittest.TestCase):
         with open(self.log_file, "r", encoding="utf-8") as f:
             content = f.read()
             self.assertIn("This is a test", content)
+
+    def test_create_new_logging_database(self):
+        """Test when the database object is passed a file path that points to
+        an unexisting file, it creates a new database file in the given
+        location and runs the starting SQL to create the empty table to store
+        logging data."""
+        test_db = Path("database/test_create_new_logging_database.db")
+        test_logger = MyLogger(
+            "test.unit.test_my_logger",
+            self.log_file,
+            logging.DEBUG,
+            log_to_console=False,
+            log_to_file=False,
+            log_to_database=True,
+            database=test_db,
+            initial_database_script="database/logging.sql",
+        )
+        test_logger.info("This is a test")
+        
+        self.assertTrue(test_db.exists())
+        test_db.unlink()
 
 
 if __name__ == "__main__":

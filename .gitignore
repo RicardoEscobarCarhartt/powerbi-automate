@@ -375,3 +375,9 @@ logs/
 *.db3
 *.s3db
 *.sl3
+
+# Data
+data/
+
+# Exeption for requirements.txt
+!requirements.txt

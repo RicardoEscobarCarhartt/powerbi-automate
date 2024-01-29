@@ -3,7 +3,6 @@ import logging
 from pathlib import Path
 from datetime import datetime, UTC
 
-
 from carhartt_pbi_automate.database import Database
 
 
@@ -25,8 +24,10 @@ class SqliteHandler(logging.StreamHandler):
         if database:
             if isinstance(database, Database):
                 self.database = database
+            else:
+                raise TypeError("database must be a Database object")
         else:
-            self.database = Database(Path("logging.db"))
+            raise TypeError("database must be a Database object, not None")
 
         # execute the SQL script on the database as soon as the handler is
         # initialized
