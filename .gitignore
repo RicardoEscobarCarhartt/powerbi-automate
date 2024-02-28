@@ -381,3 +381,6 @@ data/
 
 # Exeption for requirements.txt
 !requirements.txt
+
+# tmp files
+tmp/
