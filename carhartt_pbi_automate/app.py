@@ -15,15 +15,17 @@ load_dotenv()
 
 ##################################################################### Connections ##################################################################################
 #################### EDW CONNECTION ####################
-conn_EDW = get_edw_connection()
+conn_EDW = get_edw_connection("DBNSQLPNET")
+print("Connection to EDW has been established!")
 
 #################### POWER BI CONNECTION ####################
-conn_BI = get_bi_connection()
+conn_BI = get_bi_connection("powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply")
+print("Connection to Power BI has been established!")
 
 #################### TEAMS CONNECTOR ####################
 teams_webhook_url = os.environ.get("TEAMS_WEBHOOK_URL")
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
-
+exit()
 
 ##################################################################### Coding (Data Extraction) #######################################################################################
 #################### (1) DATASET EDW SQL SERVER ####################
