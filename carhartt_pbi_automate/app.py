@@ -25,42 +25,43 @@ print("Connection to Power BI has been established!")
 #################### TEAMS CONNECTOR ####################
 teams_webhook_url = os.environ.get("TEAMS_WEBHOOK_URL")
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
-exit()
+print("Connection to Teams has been established!")
 
 ##################################################################### Coding (Data Extraction) #######################################################################################
 #################### (1) DATASET EDW SQL SERVER ####################
 query_edw = """
-SELECT 
-      TotalTables AS Total_Tables
-	  ,TotalStoredProcedures AS Stored_Procedures
-      ,TotalViews AS Total_Views
-	  ,TotalTriggers AS Total_Triggers
-	  ,TotalSSISpackage AS Total_SSIS_packages
-  FROM [CarharttDw].[Utility].[DataflowUsedSpaceLogView]
-  WHERE CAST([DateInsert] AS date) = CAST(GETDATE() AS DATE)
+SELECT
+    TotalTables AS Total_Tables
+    ,TotalStoredProcedures AS Stored_Procedures
+    ,TotalViews AS Total_Views
+    ,TotalTriggers AS Total_Triggers
+    ,TotalSSISpackage AS Total_SSIS_packages
+FROM [CarharttDw].[Utility].[DataflowUsedSpaceLogView]
+WHERE CAST([DateInsert] AS date) = CAST(GETDATE() AS DATE)
 """
 df_edw = pd.read_sql(query_edw, conn_EDW)
 
 #################### (2) DATASET BI DASHBOARD ####################
 cursor_data_BI = conn_BI.cursor()
 query_dax = """
-DEFINE 
-    VAR __DS0FilterTable = 
-	    TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
+DEFINE
+    VAR __DS0FilterTable =
+        TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
 
 EVALUATE
     SUMMARIZECOLUMNS(
-        __DS0FilterTable, 
-        "Total_Tables", IGNORE('Database Details'[Total Tables]),
-        "Stored_Procedures", IGNORE('Database Details'[Stored Procedures]),
-        "Total_Views", IGNORE('Database Details'[Total Views]),
-        "Total_Triggers", IGNORE('Database Details'[Total Triggers]),
-        "Total_SSIS_packages", IGNORE('Database Details'[Total SSIS packages])
-		)
-    """
+    __DS0FilterTable,
+    "Total_Tables", IGNORE('Database Details'[Total Tables]),
+    "Stored_Procedures", IGNORE('Database Details'[Stored Procedures]),
+    "Total_Views", IGNORE('Database Details'[Total Views]),
+    "Total_Triggers", IGNORE('Database Details'[Total Triggers]),
+    "Total_SSIS_packages", IGNORE('Database Details'[Total SSIS packages])
+    )
+"""
 cursor_data_BI.execute(query_dax)
 results_table = cursor_data_BI.fetchall()
 column_names = [column[0].replace('[', '').replace(']', '') for column in cursor_data_BI.description]
+print(f"Columns: {column_names}")
 data_table = list(results_table)
 df_bi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
@@ -69,10 +70,10 @@ cursor_data_BI.close()
 cursor_refresh_BI = conn_BI.cursor()
 query_dax_refresh = """
 DEFINE VAR __DS0FilterTable = 
-	TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
+    TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
 
 EVALUATE
-	SUMMARIZECOLUMNS(__DS0FilterTable, "Last_refresh", IGNORE('Database Details'[Last refresh]))
+    SUMMARIZECOLUMNS(__DS0FilterTable, "Last_refresh", IGNORE('Database Details'[Last refresh]))
 """
 cursor_refresh_BI.execute(query_dax_refresh)
 results_refresh = cursor_refresh_BI.fetchall()
