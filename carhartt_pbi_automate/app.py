@@ -45,7 +45,9 @@ df_edw = pd.read_sql(query_edw, conn_EDW)
 
 #################### (2) DATASET BI DASHBOARD ####################
 cursor_data_BI = conn_BI.cursor()
-query_dax = """
+inventory_plans_start_month = "2024-09"
+inventory_plans_end_month = "2025-09"
+query_dax = f"""
 // DAX Query
 DEFINE
     MEASURE '#Local Measures'[SlicerCheck] = 
@@ -55,10 +57,10 @@ CALCULATE ( IF ( ISFILTERED ( 'Plan Versions'[Plan Name] ), 1, 0 ), ALLSELECTED 
 /* USER DAX END */)
 
     VAR __DS0FilterTable = 
-        TREATAS({"2024-09"}, 'Inventory Plans Start Month'[Start Fiscal Year/Month])
+        TREATAS({{{inventory_plans_start_month}}}, 'Inventory Plans Start Month'[Start Fiscal Year/Month])
 
     VAR __DS0FilterTable2 = 
-        TREATAS({"2025-09"}, 'Inventory Plans End Month'[End Fiscal Year/Month])
+        TREATAS({{{inventory_plans_end_month}}}, 'Inventory Plans End Month'[End Fiscal Year/Month])
 
     VAR __DS0FilterTable3 = 
         TREATAS({"NIGHTLY"}, 'Plan Versions'[Plan Version])
