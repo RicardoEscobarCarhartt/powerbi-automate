@@ -45,8 +45,10 @@ df_edw = pd.read_sql(query_edw, conn_EDW)
 
 #################### (2) DATASET BI DASHBOARD ####################
 cursor_data_BI = conn_BI.cursor()
-inventory_plans_start_month = "2024-09"
-inventory_plans_end_month = "2025-09"
+inventory_plans_start_month = '"2024-09"'
+inventory_plans_end_month = '"2025-09"'
+now = datetime.now()
+nightly_current_date = f'"NIGHTLY-{now.month}/{now.day}/{now.year}"'
 query_dax = f"""
 // DAX Query
 DEFINE
@@ -63,19 +65,19 @@ CALCULATE ( IF ( ISFILTERED ( 'Plan Versions'[Plan Name] ), 1, 0 ), ALLSELECTED 
         TREATAS({{{inventory_plans_end_month}}}, 'Inventory Plans End Month'[End Fiscal Year/Month])
 
     VAR __DS0FilterTable3 = 
-        TREATAS({"NIGHTLY"}, 'Plan Versions'[Plan Version])
+        TREATAS({{"NIGHTLY"}}, 'Plan Versions'[Plan Version])
 
     VAR __DS0FilterTable4 =
-        TREATAS({"NIGHTLY-4/11/2024"}, 'Plan Versions'[Plan Name])
+        TREATAS({{{nightly_current_date}}}, 'Plan Versions'[Plan Name])
 
     VAR __DS0FilterTable5 = 
         FILTER(
             KEEPFILTERS(VALUES('Products'[Is Licensed])),
-            AND('Products'[Is Licensed] IN {"N"}, NOT('Products'[Is Licensed] IN {BLANK()}))
+            AND('Products'[Is Licensed] IN {{"N"}}, NOT('Products'[Is Licensed] IN {{BLANK()}}))
         )
 
     VAR __DS0FilterTable6 = 
-        TREATAS({"Inv Dem"}, 'Reporting Notification Messages'[Content ID])
+        TREATAS({{"Inv Dem"}}, 'Reporting Notification Messages'[Content ID])
 
     VAR __ValueFilterDM0 = 
         FILTER(
@@ -138,25 +140,24 @@ column_names = [
     column[0].replace("[", "").replace("]", "")
     for column in cursor_data_BI.description
 ]
-print(f"Columns: {column_names}")
 data_table = list(results_table)
 df_bi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
 
 #################### (3) REFRESHED DATE BI DASHBOARD ####################
-cursor_refresh_BI = conn_BI.cursor()
-query_dax_refresh = """
-DEFINE VAR __DS0FilterTable = 
-    TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
+# cursor_refresh_BI = conn_BI.cursor()
+# query_dax_refresh = """
+# DEFINE VAR __DS0FilterTable = 
+#     TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
 
-EVALUATE
-    SUMMARIZECOLUMNS(__DS0FilterTable, "Last_refresh", IGNORE('Database Details'[Last refresh]))
-"""
-cursor_refresh_BI.execute(query_dax_refresh)
-results_refresh = cursor_refresh_BI.fetchall()
-data_refresh = list(results_refresh)
-df_refresh_bi = pd.DataFrame(data_refresh)
-cursor_refresh_BI.close()
+# EVALUATE
+#     SUMMARIZECOLUMNS(__DS0FilterTable, "Last_refresh", IGNORE('Database Details'[Last refresh]))
+# """
+# cursor_refresh_BI.execute(query_dax_refresh)
+# results_refresh = cursor_refresh_BI.fetchall()
+# data_refresh = list(results_refresh)
+# df_refresh_bi = pd.DataFrame(data_refresh)
+# cursor_refresh_BI.close()
 
 
 ##################################################################### Coding (Data Cleansing) #######################################################################################
