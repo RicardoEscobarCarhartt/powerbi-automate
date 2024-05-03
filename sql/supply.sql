@@ -1,6 +1,15 @@
+Use CarharttDw;
+go
+/* These are the columns that are compared to power bi dataframe.
+
+YearPeriodMonth
+SalesDemandUnits
+TotalReceiptPlanUnits
+PlannedProductionUnits
+*/
 -- This query is to be compared to: 'Conectado a Supply.xlsx'
 SELECT [DT].[ActualDate] as [Version Date],
-       [EVT].[YearPeriodMonth],
+       TRIM([EVT].[YearPeriodMonth]) as [YearPeriodMonth],
        SUM(SCP.SalesForecastUnits) 'SalesDemandUnits',
        SUM(SCP.CurrentTotalReceiptPlanUnits) 'TotalReceiptPlanUnits',
        SUM(SCP.PlannedProductionUnits) 'PlannedProductionUnits',
