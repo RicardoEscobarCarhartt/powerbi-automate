@@ -15,8 +15,15 @@ load_dotenv()
 
 ##################################################################### Connections ##################################################################################
 #################### EDW CONNECTION ####################
-conn_EDW = get_edw_connection("DBNSQLPNET")
-print("Connection to EDW has been established!")
+while True:
+    try:
+        conn_EDW = get_edw_connection("DBNSQLPNET")
+        print("Connection to EDW has been established!")
+        break
+    except Exception as error:
+        print(f"Error: {error}")
+        print("Trying to connect again...")
+        continue
 
 #################### POWER BI CONNECTION ####################
 conn_BI = get_bi_connection(
@@ -32,16 +39,54 @@ print("Connection to Teams has been established!")
 ##################################################################### Coding (Data Extraction) #######################################################################################
 #################### (1) DATASET EDW SQL SERVER ####################
 query_edw = """
-SELECT
-    TotalTables AS Total_Tables
-    ,TotalStoredProcedures AS Stored_Procedures
-    ,TotalViews AS Total_Views
-    ,TotalTriggers AS Total_Triggers
-    ,TotalSSISpackage AS Total_SSIS_packages
-FROM [CarharttDw].[Utility].[DataflowUsedSpaceLogView]
-WHERE CAST([DateInsert] AS date) = CAST(GETDATE() AS DATE)
+-- This query is to be compared to: 'Conectado a Supply.xlsx'
+SELECT [DT].[ActualDate] as [Version Date],
+       TRIM([EVT].[YearPeriodMonth]) as [YearPeriodMonth],
+       SUM(SCP.SalesForecastUnits) 'SalesDemandUnits',
+       SUM(SCP.CurrentTotalReceiptPlanUnits) 'TotalReceiptPlanUnits',
+       SUM(SCP.PlannedProductionUnits) 'PlannedProductionUnits',
+       SUM([SCP].[HighSurplusUnits]) [HighSurplusUnits],
+       SUM([SCP].[LowSurplusUnits]) [LowSurplusUnits],
+       SUM([SCP].[InventoryTargetRiskUnits] - [SCP].[HighRiskUnits]) AS 'LowRisk',
+	   ---Max Date of Period
+	   SUM([SCP].[HighRiskUnits]) AS 'HighRisk',
+       SUM([SCP].[InventoryTargetRiskUnits]) 'Inventory Target Risk Units',
+       SUM([SCP].[InventoryTargetSurplusUnits]) 'Inventory Target Surplus Units'
+FROM [CarharttDw].[Planning].[SizedWeeklyCombinedPlans] SCP
+    INNER JOIN [Dimensions].[Days] DT
+        ON [SCP].[VersionDateKey] = [DT].[DateKey]
+    INNER JOIN [Dimensions].[Days] EVT
+        ON [EVT].[DateKey] = [SCP].[FiscalWeekDateKey]
+    INNER JOIN [Dimensions].[Products] P
+        ON [P].[ProductKey] = [SCP].[ProductKey]
+WHERE
+    --View Filters
+    [SCP].[PlanType] = 'NIGHTLY'
+    AND [SCP].[InventorySegment] != 'ALL'
+    AND [SCP].[ExtendedEOP] = 'N'
+    --PBI Filters Hidden
+    and [P].[Department] in ( 'Men''s', 'Women''s', 'Personal Protective' ) --Hidden
+    AND EVT.YearPeriodMonth IS NOT NULL
+    AND [EVT].[CurrentYearOffset] IN ( 0,1)
+    and [EVT].[CurrentSeasonOffset] IN (0,1)
+    and [P].[StockCategory] = 'A'
+    and [P].[SalesStatus] <> 'Z1'
+    and P.StillInERP = 'Y' --FirstQuality
+    --PBI Visible Filters
+    AND [SCP].[VersionDateKey] =
+    (
+        SELECT [DateKey] FROM [Dimensions].[Days] WHERE [CurrentDayOffset] = 0
+    )    
+GROUP BY [DT].[ActualDate],
+         [EVT].[YearPeriodMonth]
+ORDER BY [EVT].[YearPeriodMonth];
 """
+time_start = datetime.now()
+print("Extracting data from EDW...")
 df_edw = pd.read_sql(query_edw, conn_EDW)
+time_end = datetime.now()
+print(f"Time to extract data from EDW: {time_end - time_start}")
+print("Data from EDW has been extracted!")
 
 #################### (2) DATASET BI DASHBOARD ####################
 cursor_data_BI = conn_BI.cursor()
@@ -134,6 +179,8 @@ ORDER BY
     'Dates'[Current Month Offset], 'Dates'[Year/Period/Month]
 
 """
+print("Extracting data from Power BI...")
+time_start = datetime.now()
 cursor_data_BI.execute(query_dax)
 results_table = cursor_data_BI.fetchall()
 column_names = [
@@ -143,6 +190,18 @@ column_names = [
 data_table = list(results_table)
 df_bi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
+time_end = datetime.now()
+print(f"Time to extract data from Power BI: {time_end - time_start}")
+print("Data from Power BI has been extracted!")
+
+# Save the dataframes to csv files
+df_edw.to_csv("edw_data.csv", index=False)
+df_bi.to_csv("bi_data.csv", index=False)
+
+# Close connections
+conn_EDW.close()
+conn_BI.close()
+exit()
 
 #################### (3) REFRESHED DATE BI DASHBOARD ####################
 # cursor_refresh_BI = conn_BI.cursor()
