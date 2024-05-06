@@ -194,6 +194,44 @@ time_end = datetime.now()
 print(f"Time to extract data from Power BI: {time_end - time_start}")
 print("Data from Power BI has been extracted!")
 
+# Modify the column name to match the EDW dataset
+df_bi.rename(
+    columns={
+        "DatesYear/Period/Month": "YearPeriodMonth",
+    },
+    inplace=True,
+)
+
+# Drop the columns that are not in the EDW dataset
+df_bi.drop(
+    columns=[
+        "DatesCurrent Month Offset",
+        "ConstrainedReceiptPlanUnits",
+        "ForwardWeeksOfCoverage",
+        "WorkInProgressUnits",
+        "InTransitUnits",
+    ],
+    inplace=True,
+)
+
+# Drop the columns in the EDW dataset that are not in the BI dataset
+df_edw.drop(
+    columns=[
+        "Version Date",
+        "HighSurplusUnits",
+        "LowSurplusUnits",
+        "LowRisk",
+        "HighRisk",
+        "Inventory Target Risk Units",
+        "Inventory Target Surplus Units",
+    ],
+    inplace=True,
+)
+
+# Apply ORDER BY YearPeriodMonth on both dataframes
+df_bi = df_bi.sort_values(by="YearPeriodMonth").reset_index(drop=True)
+df_edw = df_edw.sort_values(by="YearPeriodMonth").reset_index(drop=True)
+
 # Save the dataframes to csv files
 df_edw.to_csv("edw_data.csv", index=False)
 df_bi.to_csv("bi_data.csv", index=False)
@@ -206,7 +244,7 @@ exit()
 #################### (3) REFRESHED DATE BI DASHBOARD ####################
 # cursor_refresh_BI = conn_BI.cursor()
 # query_dax_refresh = """
-# DEFINE VAR __DS0FilterTable = 
+# DEFINE VAR __DS0FilterTable =
 #     TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
 
 # EVALUATE
