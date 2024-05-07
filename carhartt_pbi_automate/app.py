@@ -87,12 +87,8 @@ SET @VersionDateToValidate =
 ----Sales Demand Units = SalesForecastUnits in EDW---
 SELECT TRIM([DT].[YearPeriodMonth]) 'YearPeriodMonth',
        SUM([SCP].[SalesForecastUnits]) 'SalesDemandUnits',
-       SUM([SCP].[ConstrainedReceiptPlanUnits]) 'ConstrainedReceiptPlanUnits',
        SUM([SCP].[CurrentTotalReceiptPlanUnits]) 'TotalReceiptPlanUnits',
-       AVG([SCP].[TargetWeeksOfCoverage]) 'ForwardWeeksOfCoverage',
-       SUM([SCP].[PlannedProductionUnits]) 'PlannedProductionUnits',
-       SUM([SCP].[WorkInProgressUnits]) 'WorkInProgressUnits',
-       SUM([SCP].[InTransitUnits]) 'InTransitUnits'
+       SUM([SCP].[PlannedProductionUnits]) 'PlannedProductionUnits'
 FROM [CarharttDw].[planning].[SizedWeeklyCombinedPlans] SCP
     INNER JOIN [CarharttDw].[Dimensions].[Days] DT
         ON [DT].[DateKey] = [SCP].[FiscalWeekDateKey]
@@ -114,7 +110,9 @@ df_edw = pd.read_sql(query_edw, conn_EDW)
 time_end = datetime.now()
 time_diff = time_end - time_start
 # print(f"Time to extract data from EDW: {time_diff}")
-print(f"Time to extract data from EDW: {time_diff.seconds // 3600} hours {(time_diff.seconds // 60) % 60} minutes {time_diff.seconds % 60} seconds")
+print(
+    f"Time to extract data from EDW: {time_diff.seconds // 3600} hours {(time_diff.seconds // 60) % 60} minutes {time_diff.seconds % 60} seconds"
+)
 print("Data from EDW has been extracted!")
 
 #################### (2) DATASET BI DASHBOARD ####################
@@ -224,7 +222,9 @@ df_bi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
 time_end = datetime.now()
 time_diff = time_end - time_start
-print(f"Time to extract data from Power BI: {time_diff.seconds // 3600} hours {(time_diff.seconds // 60) % 60} minutes {time_diff.seconds % 60} seconds")
+print(
+    f"Time to extract data from Power BI: {time_diff.seconds // 3600} hours {(time_diff.seconds // 60) % 60} minutes {time_diff.seconds % 60} seconds"
+)
 print("Data from Power BI has been extracted!")
 
 # Modify the column name to match the EDW dataset
