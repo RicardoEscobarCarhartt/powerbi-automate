@@ -17,14 +17,14 @@ SET @VersionDateToValidate =
 );
  
 ----Sales Demand Units = SalesForecastUnits in EDW---
-SELECT [DT].[YearPeriodMonth],
+SELECT [DT].[YearPeriodMonth] 'YearPeriodMonth',
        SUM([SCP].[SalesForecastUnits]) 'SalesDemandUnits',
-       SUM([SCP].[ConstrainedReceiptPlanUnits]) 'ConstrainedReceiptPlanUnits',
+       --SUM([SCP].[ConstrainedReceiptPlanUnits]) 'ConstrainedReceiptPlanUnits',
        SUM([SCP].[CurrentTotalReceiptPlanUnits]) 'TotalReceiptPlanUnits',
-       AVG([SCP].[TargetWeeksOfCoverage]) 'ForwardWeeksOfCoverage',
-       SUM([SCP].[PlannedProductionUnits]) 'PlannedProductionUnits',
-       SUM([SCP].[WorkInProgressUnits]) 'WorkInProgressUnits',
-       SUM([SCP].[InTransitUnits]) 'InTransitUnits'
+       --AVG([SCP].[TargetWeeksOfCoverage]) 'ForwardWeeksOfCoverage',
+       SUM([SCP].[PlannedProductionUnits]) 'PlannedProductionUnits'
+       --SUM([SCP].[WorkInProgressUnits]) 'WorkInProgressUnits',
+       --SUM([SCP].[InTransitUnits]) 'InTransitUnits'
 FROM [CarharttDw].[planning].[SizedWeeklyCombinedPlans] SCP
     INNER JOIN [CarharttDw].[Dimensions].[Days] DT
         ON [DT].[DateKey] = [SCP].[FiscalWeekDateKey]
