@@ -2,6 +2,7 @@
 import os
 import time
 from datetime import datetime
+import threading
 
 import pyautogui
 import pandas as pd
@@ -10,6 +11,7 @@ import pymsteams
 from dotenv import load_dotenv
 
 from connector import get_edw_connection, get_bi_connection
+from popup import detect_popup_window
 
 
 # Load environment variables from .env file
@@ -51,21 +53,41 @@ while True:
 #################### POWER BI CONNECTION ####################
 while True:
     try:
-        conn_BI = get_bi_connection(
-            "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply"
-        )
+        # Define a variable to store the connection to Power BI
+        conn_BI_result = [None]
+
+        # Define a function that wraps get_bi_connection
+        def get_connection():
+            conn_BI = get_bi_connection(
+                "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply"
+            )
+            # Save the result in the list
+            conn_BI_result[0] = conn_BI
+
+        # Create a thread for get_connection
+        thread1 = threading.Thread(target=get_connection)
+
+        # Start the thread
+        thread1.start()
+
+        # Wait for the pop-up to appear (adjust as needed)
+        print("Waiting for the pop-up to appear...")
+        time.sleep(2)
+
+        # Call detect_popup_window while get_connection is running in the other thread
+        detect_popup_window()
+
+        # Wait for the thread to finish
+        thread1.join()
+
+        # Get the connection from the list
+        conn_BI = conn_BI_result[0]
         break
     except Exception as error:
         print(f"Error: {error}")
         print("Trying to connect again...")
         continue
 
-# Wait for the user loging pop-up window to be opened
-time.sleep(2)
-
-# Press tab and then enter
-pyautogui.press("tab")
-pyautogui.press("enter")
 print("Connection to Power BI has been established!")
 
 #################### TEAMS CONNECTOR ####################
@@ -270,46 +292,42 @@ if not os.path.exists("results"):
 result_file = os.path.join("results", f"{timestamp}_comparison_result.html")
 
 # Save the comparison result to a file
-with open(result_file, "w", encoding='utf-8') as file:
+with open(result_file, "w", encoding="utf-8") as file:
     file.write(result_html)
+
+# Create the connectorcard object
+myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
+
+# If the comparation its ok do nothing, if not send a notification to the channel in teams
+if compare.matches():
+    # Add a summary to the message
+    myTeamsMessage.summary("Data comparison completed successfully")
+
+    # Add text to the message
+    myTeamsMessage.text(
+        "The data comparison has been completed successfully! There are no differences between the datasets."
+    )
+else:
+    # Add a summary to the message
+    myTeamsMessage.summary("Data comparison completed with differences")
+
+    # Add text to the message
+    myTeamsMessage.text(
+        "The data comparison has been completed, but there are differences between the datasets. See the comparison result below:"
+    )
+
+    # Add a link to the comparison result file
+    myTeamsMessage.addLinkButton(
+        "View comparison result", f"file://{result_file}"
+    )
+
+# Send message
+myTeamsMessage.send()
 
 # Close connections
 conn_EDW.close()
 conn_BI.close()
 exit()
-
-#################### (3) REFRESHED DATE BI DASHBOARD ####################
-# cursor_refresh_BI = conn_BI.cursor()
-# query_dax_refresh = """
-# DEFINE VAR __DS0FilterTable =
-#     TREATAS({"Y"}, 'Is Last Date'[Is Last Date])
-
-# EVALUATE
-#     SUMMARIZECOLUMNS(__DS0FilterTable, "Last_refresh", IGNORE('Database Details'[Last refresh]))
-# """
-# cursor_refresh_BI.execute(query_dax_refresh)
-# results_refresh = cursor_refresh_BI.fetchall()
-# data_refresh = list(results_refresh)
-# df_refresh_bi = pd.DataFrame(data_refresh)
-# cursor_refresh_BI.close()
-
-
-##################################################################### Coding (Data Cleansing) #######################################################################################
-#################### (1) Dataframe EDW SQL SERVER #######################
-
-
-#################### (2) REFRESHED DATE BI DASHBOARD ####################
-# FORMATING LAST UPDATE VALUE
-date_value = df_refresh_bi.iloc[0, 0]
-date_value_new = date_value.replace("Current as of ", "")
-# Fixing format to DD/MM/YYYY
-date_object = datetime.strptime(date_value_new, "%b %d, %Y")
-date_formated = date_object.strftime("%d/%m/%Y")
-date_formated_object = datetime.strptime(date_formated, "%d/%m/%Y")
-# Extracting current date
-current_date = datetime.now()
-current_date_formated = current_date.strftime("%d/%m/%Y")
-current_date_object = datetime.strptime(current_date_formated, "%d/%m/%Y")
 
 #################### (3) DATASET BI DASHBOARD ####################
 
