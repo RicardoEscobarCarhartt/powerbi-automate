@@ -305,7 +305,8 @@ if compare.matches():
 
     # Add text to the message
     myTeamsMessage.text(
-        "The data comparison has been completed successfully! There are no differences between the datasets."
+        f"The data comparison has been completed successfully! There are no differences between the datasets."
+        f"\n\n{df_edw.to_markdown(index=False)}"
     )
 else:
     # Add a summary to the message
@@ -313,12 +314,10 @@ else:
 
     # Add text to the message
     myTeamsMessage.text(
-        "The data comparison has been completed, but there are differences between the datasets. See the comparison result below:"
-    )
-
-    # Add a link to the comparison result file
-    myTeamsMessage.addLinkButton(
-        "View comparison result", f"file://{result_file}"
+        "The data comparison has been completed, but there are differences between the datasets. See the comparison result below:\n\n"
+        f"Compare result:\n\n{result.to_markdown(index=False)}\n"
+        f"EDW dataset:\n\n{df_edw.to_markdown(index=False)}\n"
+        f"PowerBI dataset:\n\n{df_bi.to_markdown(index=False)}"
     )
 
 # Send message
