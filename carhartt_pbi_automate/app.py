@@ -255,6 +255,24 @@ df_edw = df_edw.sort_values(by="YearPeriodMonth").reset_index(drop=True)
 df_edw.to_csv("edw_data.csv", index=False)
 df_bi.to_csv("bi_data.csv", index=False)
 
+# Use the datacompy library to compare the dataframes
+compare = datacompy.Compare(df_bi, df_edw, on_index=True)
+compare.matches(ignore_extra_columns=False)
+result = compare.all_mismatch()
+result_html = result.to_html(index=False)
+
+# Generate a timestamp to use in the result file name
+timestamp = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+
+# Create results/ folder if it does not exist
+if not os.path.exists("results"):
+    os.makedirs("results")
+result_file = os.path.join("results", f"{timestamp}_comparison_result.html")
+
+# Save the comparison result to a file
+with open(result_file, "w", encoding='utf-8') as file:
+    file.write(result_html)
+
 # Close connections
 conn_EDW.close()
 conn_BI.close()
