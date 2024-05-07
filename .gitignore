@@ -384,3 +384,10 @@ data/
 
 # tmp files
 tmp/
+
+# csv and excel files
+*.csv
+*.xlsx
+
+# results html folder
+results/
