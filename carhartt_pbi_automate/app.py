@@ -247,17 +247,6 @@ df_bi.drop(
     inplace=True,
 )
 
-# Drop the columns in the EDW dataset that are not in the BI dataset
-df_edw.drop(
-    columns=[
-        "ConstrainedReceiptPlanUnits",
-        "ForwardWeeksOfCoverage",
-        "WorkInProgressUnits",
-        "InTransitUnits",
-    ],
-    inplace=True,
-)
-
 # Apply ORDER BY YearPeriodMonth on both dataframes
 df_bi = df_bi.sort_values(by="YearPeriodMonth").reset_index(drop=True)
 df_edw = df_edw.sort_values(by="YearPeriodMonth").reset_index(drop=True)
