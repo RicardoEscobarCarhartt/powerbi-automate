@@ -84,7 +84,7 @@ while True:
                 if conn_BI_result[0] is not None:
                     break
                 # Call detect_popup_window while get_connection is running in the other thread
-                detect_popup_window(".*Iniciar sesión en la cuenta.*")
+                detect_popup_window(".*Sign in to your account.*")
                 is_powerbi_logged_in = True
             except Exception as error:
                 time.sleep(2)
