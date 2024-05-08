@@ -18,6 +18,17 @@ from popup import detect_popup_window
 load_dotenv()
 
 
+# Define a variable to store the connection to Power BI
+conn_BI_result = [None]
+
+# Define a function that wraps get_bi_connection
+def get_connection():
+    conn_BI = get_bi_connection(
+        "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply"
+    )
+    # Save the result in the list
+    conn_BI_result[0] = conn_BI
+
 def get_edw_start_end_dates(edw_data_frame):
     """
     Get the start and end dates from the EDW data frame
@@ -40,6 +51,7 @@ def get_edw_start_end_dates(edw_data_frame):
 
 ##################################################################### Connections ##################################################################################
 #################### EDW CONNECTION ####################
+print("Connecting to EDW...")
 while True:
     try:
         conn_EDW = get_edw_connection("DBNSQLPNET")
@@ -51,19 +63,9 @@ while True:
         continue
 
 #################### POWER BI CONNECTION ####################
+is_powerbi_logged_in = False
 while True:
     try:
-        # Define a variable to store the connection to Power BI
-        conn_BI_result = [None]
-
-        # Define a function that wraps get_bi_connection
-        def get_connection():
-            conn_BI = get_bi_connection(
-                "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply"
-            )
-            # Save the result in the list
-            conn_BI_result[0] = conn_BI
-
         # Create a thread for get_connection
         thread1 = threading.Thread(target=get_connection)
 
@@ -74,8 +76,24 @@ while True:
         print("Waiting for the pop-up to appear...")
         time.sleep(2)
 
-        # Call detect_popup_window while get_connection is running in the other thread
-        detect_popup_window()
+        # Check if the pop-up window has been detected
+        printed_once = False
+        while is_powerbi_logged_in == False:
+            try:
+                # Check if the connection has been established
+                if conn_BI_result[0] is not None:
+                    break
+                # Call detect_popup_window while get_connection is running in the other thread
+                detect_popup_window(".*Iniciar sesión en la cuenta.*")
+                is_powerbi_logged_in = True
+            except Exception as error:
+                time.sleep(2)
+                if printed_once:
+                    break
+                else:
+                    print(f"Error: {error}")
+                    print("Click the 'Sign In' button manually.")
+                    printed_once = True
 
         # Wait for the thread to finish
         thread1.join()
@@ -85,7 +103,10 @@ while True:
         break
     except Exception as error:
         print(f"Error: {error}")
-        print("Trying to connect again...")
+        try_again = input("Do you want to try again? (y/n): ")
+        if try_again.lower() != "y":
+            print("Exiting the program...")
+            exit()
         continue
 
 print("Connection to Power BI has been established!")
