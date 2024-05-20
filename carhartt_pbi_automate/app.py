@@ -3,11 +3,13 @@ import os
 import time
 from datetime import datetime
 import threading
+from typing import List
 
 import pyautogui
 import pandas as pd
 import datacompy
 import pymsteams
+import adodbapi
 from dotenv import load_dotenv
 
 from connector import get_edw_connection, get_bi_connection
@@ -19,7 +21,7 @@ load_dotenv()
 
 
 # Define a variable to store the connection to Power BI
-conn_BI_result = [None]
+conn_BI_result: List[adodbapi.Connection] = [None]
 
 # Define a function that wraps get_bi_connection
 def get_connection():
