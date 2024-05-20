@@ -1,12 +1,14 @@
-Use CarharttDw;
-go
-/* These are the columns that are compared to power bi dataframe.
+-- Uncomment the following lines to run this in MSSQL Server Management Studio
+-- Use CarharttDw;
+-- go
 
+/* These are the columns that are compared to power bi dataframe.
 YearPeriodMonth
 SalesDemandUnits
 TotalReceiptPlanUnits
 PlannedProductionUnits
 */
+
 -- This query is to be compared to: 'Conectado a Supply.xlsx'
 DECLARE @VersionDateToValidate INT;
 SET @VersionDateToValidate =
@@ -17,14 +19,10 @@ SET @VersionDateToValidate =
 );
  
 ----Sales Demand Units = SalesForecastUnits in EDW---
-SELECT [DT].[YearPeriodMonth] 'YearPeriodMonth',
+SELECT TRIM([DT].[YearPeriodMonth]) 'YearPeriodMonth',
        SUM([SCP].[SalesForecastUnits]) 'SalesDemandUnits',
-       --SUM([SCP].[ConstrainedReceiptPlanUnits]) 'ConstrainedReceiptPlanUnits',
        SUM([SCP].[CurrentTotalReceiptPlanUnits]) 'TotalReceiptPlanUnits',
-       --AVG([SCP].[TargetWeeksOfCoverage]) 'ForwardWeeksOfCoverage',
        SUM([SCP].[PlannedProductionUnits]) 'PlannedProductionUnits'
-       --SUM([SCP].[WorkInProgressUnits]) 'WorkInProgressUnits',
-       --SUM([SCP].[InTransitUnits]) 'InTransitUnits'
 FROM [CarharttDw].[planning].[SizedWeeklyCombinedPlans] SCP
     INNER JOIN [CarharttDw].[Dimensions].[Days] DT
         ON [DT].[DateKey] = [SCP].[FiscalWeekDateKey]
@@ -35,7 +33,7 @@ WHERE [SCP].[PlanType] = 'NIGHTLY'
       AND [DT].[CurrentYearOffset] IN ( 0, 1 )
       AND [DT].[CurrentSeasonOffset] IN ( 0, 1 )
       AND [SCP].[InventorySegment] <> 'ALL' --Visible
-      AND [P].[Licensed] <> 'Y' --Visible 
+      AND [P].[Licensed] <> 'Y' --Visible
       AND [P].[Licensed] IS NOT NULL --Hidden
 GROUP BY [DT].[YearPeriodMonth]
 ORDER BY [DT].[YearPeriodMonth];
