@@ -1,11 +1,12 @@
-##################################################################### Libraries ####################################################################################
+"""This module contains the main code for the Carhartt Power BI Automation
+project."""
+
 import os
 import time
 from datetime import datetime
 import threading
 from typing import List
 
-import pyautogui
 import pandas as pd
 import datacompy
 import pymsteams
@@ -14,45 +15,31 @@ from dotenv import load_dotenv
 
 from connector import get_edw_connection, get_bi_connection
 from popup import detect_popup_window
+from supply import get_edw_start_end_dates
 
 
 # Load environment variables from .env file
 load_dotenv()
 
-
-# Define a variable to store the connection to Power BI
+# Define a global variable to store the connection to Power BI
+# To be accessed from a thread.
 conn_BI_result: List[adodbapi.Connection] = [None]
 
-# Define a function that wraps get_bi_connection
+
+# Define a function that wraps get_bi_connection.
 def get_connection():
+    """
+    Get the connection to Power BI. This function is called from a Thread.
+    That's why the connection is saved in a list to be accessed, rather than
+    returned.
+    """
     conn_BI = get_bi_connection(
         "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply"
     )
     # Save the result in the list
     conn_BI_result[0] = conn_BI
 
-def get_edw_start_end_dates(edw_data_frame):
-    """
-    Get the start and end dates from the EDW data frame
-    """
-    start_date = edw_data_frame["YearPeriodMonth"].min()
-    end_date = edw_data_frame["YearPeriodMonth"].max()
-    # Start date: "2024-P07-Jan" convert into "2024-07", End date: "2025-P06-Dec" convert into "2025-06"
-    start_date = (
-        '"'
-        + start_date.split("-P")[0]
-        + "-"
-        + start_date.split("-P")[1][:2]
-        + '"'
-    )
-    end_date = (
-        '"' + end_date.split("-P")[0] + "-" + end_date.split("-P")[1][:2] + '"'
-    )
-    return start_date, end_date
-
-
-##################################################################### Connections ##################################################################################
-#################### EDW CONNECTION ####################
+# Connect to the EDW database.
 print("Connecting to EDW...")
 while True:
     try:
@@ -64,8 +51,9 @@ while True:
         print("Trying to connect again...")
         continue
 
-#################### POWER BI CONNECTION ####################
+# Connect to Power BI database.
 is_powerbi_logged_in = False
+retry_count = 3
 while True:
     try:
         # Create a thread for get_connection
@@ -80,7 +68,7 @@ while True:
 
         # Check if the pop-up window has been detected
         printed_once = False
-        while is_powerbi_logged_in == False:
+        while not is_powerbi_logged_in:
             try:
                 # Check if the connection has been established
                 if conn_BI_result[0] is not None:
@@ -105,11 +93,13 @@ while True:
         break
     except Exception as error:
         print(f"Error: {error}")
-        try_again = input("Do you want to try again? (y/n): ")
-        if try_again.lower() != "y":
-            print("Exiting the program...")
+        if retry_count:
+            print("Trying to connect again...")
+            retry_count -= 1
+            continue
+        else:
+            print("Failed to connect. Exiting the program...")
             exit()
-        continue
 
 print("Connection to Power BI has been established!")
 
