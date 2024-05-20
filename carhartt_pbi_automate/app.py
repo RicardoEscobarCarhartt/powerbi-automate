@@ -145,7 +145,7 @@ ORDER BY [DT].[YearPeriodMonth];
 time_start = datetime.now()
 print("Extracting data from EDW...")
 supply_sql_filepath = Path("sql/supply.sql")
-with open(str(supply_sql_filepath), "r", encoding="utf-8") as file:
+with open(supply_sql_filepath, "r", encoding="utf-8") as file:
     query_edw = file.read()
     df_edw = pd.read_sql(query_edw, conn_EDW)
 time_end = datetime.now()
