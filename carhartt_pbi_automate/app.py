@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import threading
 from typing import List
+from pathlib import Path
 
 import pandas as pd
 import datacompy
@@ -15,7 +16,7 @@ from dotenv import load_dotenv
 
 from connector import get_edw_connection, get_bi_connection
 from popup import detect_popup_window
-from supply import get_edw_start_end_dates
+from supply import get_edw_start_end_dates, get_dax_query
 
 
 # Load environment variables from .env file
@@ -38,6 +39,7 @@ def get_connection():
     )
     # Save the result in the list
     conn_BI_result[0] = conn_BI
+
 
 # Connect to the EDW database.
 print("Connecting to EDW...")
@@ -103,13 +105,12 @@ while True:
 
 print("Connection to Power BI has been established!")
 
-#################### TEAMS CONNECTOR ####################
+# Define the webhook URL for Microsoft Teams
 teams_webhook_url = os.environ.get("TEAMS_WEBHOOK_URL")
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
 print("Connection to Teams has been established!")
 
-##################################################################### Coding (Data Extraction) #######################################################################################
-#################### (1) DATASET EDW SQL SERVER ####################
+# The query to extract data from the EDW database
 query_edw = """
 DECLARE @VersionDateToValidate INT;
 SET @VersionDateToValidate =
@@ -139,114 +140,48 @@ WHERE [SCP].[PlanType] = 'NIGHTLY'
 GROUP BY [DT].[YearPeriodMonth]
 ORDER BY [DT].[YearPeriodMonth];
 """
+
+# Load supply.sql file and read the query
 time_start = datetime.now()
 print("Extracting data from EDW...")
-df_edw = pd.read_sql(query_edw, conn_EDW)
+supply_sql_filepath = Path("sql/supply.sql")
+with open(str(supply_sql_filepath), "r", encoding="utf-8") as file:
+    query_edw = file.read()
+    df_edw = pd.read_sql(query_edw, conn_EDW)
 time_end = datetime.now()
 time_diff = time_end - time_start
-# print(f"Time to extract data from EDW: {time_diff}")
+
+# Calculate the time taken to extract data from EDW
+hours = time_diff.seconds // 3600
+minutes = (time_diff.seconds // 60) % 60
+seconds = time_diff.seconds % 60
+
+# Print the time taken to extract data from EDW
 print(
-    f"Time to extract data from EDW: {time_diff.seconds // 3600} hours {(time_diff.seconds // 60) % 60} minutes {time_diff.seconds % 60} seconds"
+    f"Time to extract data from EDW: {hours:02d}:{minutes:02d}:{seconds:02d}"
 )
 print("Data from EDW has been extracted!")
 
-#################### (2) DATASET BI DASHBOARD ####################
+# Extract data from Power BI
 cursor_data_BI = conn_BI.cursor()
 inventory_plans_start_month, inventory_plans_end_month = (
     get_edw_start_end_dates(df_edw)
 )
+
+# Get the current date in the format "NIGHTLY-MM/DD/YYYY"
 print(f"Start month: {inventory_plans_start_month}")
 print(f"End month: {inventory_plans_end_month}")
 now = datetime.now()
 nightly_current_date = f'"NIGHTLY-{now.month}/{now.day}/{now.year}"'
-query_dax = f"""
-// DAX Query
-DEFINE
-    MEASURE '#Local Measures'[SlicerCheck] = 
-        (/* USER DAX BEGIN */
+dax_query = get_dax_query(
+    inventory_plans_start_month,
+    inventory_plans_end_month,
+    nightly_current_date,
+)
 
-CALCULATE ( IF ( ISFILTERED ( 'Plan Versions'[Plan Name] ), 1, 0 ), ALLSELECTED ( 'Plan Versions' ) )
-/* USER DAX END */)
-
-    VAR __DS0FilterTable = 
-        TREATAS({{{inventory_plans_start_month}}}, 'Inventory Plans Start Month'[Start Fiscal Year/Month])
-
-    VAR __DS0FilterTable2 = 
-        TREATAS({{{inventory_plans_end_month}}}, 'Inventory Plans End Month'[End Fiscal Year/Month])
-
-    VAR __DS0FilterTable3 = 
-        TREATAS({{"NIGHTLY"}}, 'Plan Versions'[Plan Version])
-
-    VAR __DS0FilterTable4 =
-        TREATAS({{{nightly_current_date}}}, 'Plan Versions'[Plan Name])
-
-    VAR __DS0FilterTable5 = 
-        FILTER(
-            KEEPFILTERS(VALUES('Products'[Is Licensed])),
-            AND('Products'[Is Licensed] IN {{"N"}}, NOT('Products'[Is Licensed] IN {{BLANK()}}))
-        )
-
-    VAR __DS0FilterTable6 = 
-        TREATAS({{"Inv Dem"}}, 'Reporting Notification Messages'[Content ID])
-
-    VAR __ValueFilterDM0 = 
-        FILTER(
-            KEEPFILTERS(
-                SUMMARIZECOLUMNS(
-                    'Dates'[Year/Period/Month],
-                    'Dates'[Current Month Offset],
-                    __DS0FilterTable,
-                    __DS0FilterTable2,
-                    __DS0FilterTable3,
-                    __DS0FilterTable4,
-                    __DS0FilterTable5,
-                    __DS0FilterTable6,
-                    "Sales_Demand_Units", 'Inventory Plans'[Sales Demand Units],
-                    "Constrained_Receipt_Plan_Units", 'Inventory Plans'[Constrained Receipt Plan Units],
-                    "Total_Receipt_Plan_Units", 'Inventory Plans'[Total Receipt Plan Units],
-                    "Forward_Weeks_Of_Coverage", 'Inventory Plans'[Forward Weeks Of Coverage],
-                    "Planned_Production_Units", 'Inventory Plans'[Planned Production Units],
-                    "Work_In_Progress_Units", 'Inventory Plans'[Work In Progress Units],
-                    "In_Transit_Units", 'Inventory Plans'[In Transit Units],
-                    "SlicerCheck", IGNORE('#Local Measures'[SlicerCheck])
-                )
-            ),
-            [SlicerCheck] = 1
-        )
-
-    VAR __DS0Core = 
-        SUMMARIZECOLUMNS(
-            'Dates'[Year/Period/Month],
-            'Dates'[Current Month Offset],
-            __DS0FilterTable,
-            __DS0FilterTable2,
-            __DS0FilterTable3,
-            __DS0FilterTable4,
-            __DS0FilterTable5,
-            __DS0FilterTable6,
-            __ValueFilterDM0,
-            "SalesDemandUnits", 'Inventory Plans'[Sales Demand Units],
-            "ConstrainedReceiptPlanUnits", 'Inventory Plans'[Constrained Receipt Plan Units],
-            "TotalReceiptPlanUnits", 'Inventory Plans'[Total Receipt Plan Units],
-            "ForwardWeeksOfCoverage", 'Inventory Plans'[Forward Weeks Of Coverage],
-            "PlannedProductionUnits", 'Inventory Plans'[Planned Production Units],
-            "WorkInProgressUnits", 'Inventory Plans'[Work In Progress Units],
-            "InTransitUnits", 'Inventory Plans'[In Transit Units]
-        )
-
-    VAR __DS0PrimaryWindowed = 
-        TOPN(501, __DS0Core, 'Dates'[Current Month Offset], 1, 'Dates'[Year/Period/Month], 1)
-
-EVALUATE
-    __DS0PrimaryWindowed
-
-ORDER BY
-    'Dates'[Current Month Offset], 'Dates'[Year/Period/Month]
-
-"""
 print("Extracting data from Power BI...")
 time_start = datetime.now()
-cursor_data_BI.execute(query_dax)
+cursor_data_BI.execute(dax_query)
 results_table = cursor_data_BI.fetchall()
 column_names = [
     column[0].replace("[", "").replace("]", "")
@@ -334,7 +269,10 @@ else:
     )
 
 # Send message
-myTeamsMessage.send()
+# myTeamsMessage.send()
+# Print to console
+print("The process has been completed!")
+print(f"{myTeamsMessage}")
 
 # Close connections
 conn_EDW.close()
