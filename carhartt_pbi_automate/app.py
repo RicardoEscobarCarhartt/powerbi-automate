@@ -229,10 +229,10 @@ else:
     )
 
 # Send message
-# myTeamsMessage.send()
+myTeamsMessage.send()
+
 # Print to console
 print("The process has been completed!")
-print(f"{myTeamsMessage}")
 
 # Close connections
 conn_EDW.close()
