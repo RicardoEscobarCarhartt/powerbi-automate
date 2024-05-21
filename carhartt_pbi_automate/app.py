@@ -73,7 +73,7 @@ while True:
 
         # Wait for the pop-up to appear (adjust as needed)
         log.info("Waiting for the pop-up to appear...")
-        time.sleep(2)
+        time.sleep(4)
 
         # Check if the pop-up window has been detected
         printed_once = False
