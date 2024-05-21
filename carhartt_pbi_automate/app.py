@@ -7,6 +7,7 @@ from datetime import datetime
 import threading
 from typing import List
 from pathlib import Path
+import traceback
 
 import pandas as pd
 import datacompy
@@ -17,7 +18,11 @@ from dotenv import load_dotenv
 from connector import get_edw_connection, get_bi_connection
 from popup import detect_popup_window
 from supply import get_edw_start_end_dates, get_dax_query, trim_dax_columns
+from get_logger import get_logger
 
+
+# Create a logger object
+log = get_logger("carhartt_pbi_automate", "logs/carhartt_pbi_automate.log")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -42,15 +47,17 @@ def get_connection():
 
 
 # Connect to the EDW database.
-print("Connecting to EDW...")
+log.info("Connecting to EDW...")
 while True:
     try:
         conn_EDW = get_edw_connection("DBNSQLPNET")
-        print("Connection to EDW has been established!")
+        log.info("Connection to EDW has been established!")
         break
     except Exception as error:
-        print(f"Error: {error}")
-        print("Trying to connect again...")
+        stack_trace = traceback.format_exc()
+        log.error(f"Error: {error}")
+        log.error(f"Stack trace: {stack_trace}")
+        log.info("Trying to connect again...")
         continue
 
 # Connect to Power BI database.
@@ -65,7 +72,7 @@ while True:
         thread1.start()
 
         # Wait for the pop-up to appear (adjust as needed)
-        print("Waiting for the pop-up to appear...")
+        log.info("Waiting for the pop-up to appear...")
         time.sleep(2)
 
         # Check if the pop-up window has been detected
@@ -83,8 +90,10 @@ while True:
                 if printed_once:
                     break
                 else:
-                    print(f"Error: {error}")
-                    print("Click the 'Sign In' button manually.")
+                    stack_trace = traceback.format_exc()
+                    log.error(f"Error: {error}")
+                    log.error(f"Stack trace: {stack_trace}")
+                    log.info("Trying to log in again...")
                     printed_once = True
 
         # Wait for the thread to finish
@@ -94,25 +103,31 @@ while True:
         conn_BI = conn_BI_result[0]
         break
     except Exception as error:
-        print(f"Error: {error}")
+        stack_trace = traceback.format_exc()
+        log.error(f"Error: {error}")
+        log.error(f"Stack trace: {stack_trace}")
         if retry_count:
-            print("Trying to connect again...")
+            log.info("Trying to connect again...")
             retry_count -= 1
             continue
         else:
-            print("Failed to connect. Exiting the program...")
+            stack_trace = traceback.format_exc()
+            log.critical(
+                "Failed to connect. Exiting the program. Please check the logs for more information."
+            )
+            log.critical(f"Stack trace: {stack_trace}")
             exit()
 
-print("Connection to Power BI has been established!")
+log.info("Connection to Power BI has been established!")
 
 # Define the webhook URL for Microsoft Teams
 teams_webhook_url = os.environ.get("TEAMS_WEBHOOK_URL")
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
-print("Connection to Teams has been established!")
+log.info("Connection to Teams has been established!")
 
 # Load supply.sql file and read the query
 time_start = datetime.now()
-print("Extracting data from EDW...")
+log.info("Extracting data from EDW...")
 supply_sql_filepath = Path("sql/supply.sql")
 with open(supply_sql_filepath, "r", encoding="utf-8") as file:
     query_edw = file.read()
@@ -126,10 +141,8 @@ minutes = (time_diff.seconds // 60) % 60
 seconds = time_diff.seconds % 60
 
 # Print the time taken to extract data from EDW
-print(
-    f"Data from EDW has been extracted.",
-    f"It took: {hours:02d}:{minutes:02d}:{seconds:02d}",
-)
+log.info("Data from EDW has been extracted.")
+log.debug(f"It took: {hours:02d}:{minutes:02d}:{seconds:02d}")
 
 # Extract data from Power BI
 cursor_data_BI = conn_BI.cursor()
@@ -139,8 +152,7 @@ try:
         get_edw_start_end_dates(df_edw)
     )
 except ValueError as error:
-    print(f"Error: {error}")
-    print("Exiting the program...")
+    stack_trace = traceback.format_exc()
     # Send a message to Teams
     myTeamsMessage.summary("Data comparison failed")
     myTeamsMessage.text(f"Error: {error}")
@@ -152,11 +164,13 @@ except ValueError as error:
     )
     myTeamsMessage.send()
 
+    log.critical(f"Data comparison failed: {error}")
+    log.critical(f"Stack trace: {stack_trace}")
     exit()
 
 # Get the current date in the format "NIGHTLY-MM/DD/YYYY"
-print(f"Start month: {inventory_plans_start_month}")
-print(f"End month: {inventory_plans_end_month}")
+log.debug(f"Start month: {inventory_plans_start_month}")
+log.debug(f"End month: {inventory_plans_end_month}")
 now = datetime.now()
 nightly_current_date = f'"NIGHTLY-{now.month}/{now.day}/{now.year}"'
 dax_query = get_dax_query(
@@ -165,7 +179,7 @@ dax_query = get_dax_query(
     nightly_current_date,
 )
 
-print("Extracting data from Power BI...")
+log.info("Extracting data from Power BI...")
 time_start = datetime.now()
 cursor_data_BI.execute(dax_query)
 results_table = cursor_data_BI.fetchall()
@@ -174,28 +188,26 @@ column_names = [
     for column in cursor_data_BI.description
 ]
 data_table = list(results_table)
-df_bi = pd.DataFrame(data_table, columns=column_names)
+df_pbi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
 time_end = datetime.now()
 time_diff = time_end - time_start
 hours = time_diff.seconds // 3600
 minutes = (time_diff.seconds // 60) % 60
 seconds = time_diff.seconds % 60
-print(
-    "Data from Power BI has been extracted!",
-    f"Time to extract data from Power BI: {hours}:{minutes}:{seconds}",
-)
+log.info("Data from Power BI has been extracted!")
+log.debug(f"Time to extract data from Power BI: {hours}:{minutes}:{seconds}")
 
 # Remove uneccesary the columns in the power bi dataframe,
 # rename the column Year/Period/Month to YearPeriodMonth
-df_bi = trim_dax_columns(df_bi)
+df_pbi = trim_dax_columns(df_pbi)
 
 # Apply ORDER BY YearPeriodMonth on both dataframes
-df_bi = df_bi.sort_values(by="YearPeriodMonth").reset_index(drop=True)
+df_pbi = df_pbi.sort_values(by="YearPeriodMonth").reset_index(drop=True)
 df_edw = df_edw.sort_values(by="YearPeriodMonth").reset_index(drop=True)
 
 # Use the datacompy library to compare the dataframes
-compare = datacompy.Compare(df_bi, df_edw, on_index=True)
+compare = datacompy.Compare(df_pbi, df_edw, on_index=True)
 compare.matches(ignore_extra_columns=False)
 result = compare.all_mismatch()
 result_html = result.to_html(index=False)
@@ -214,42 +226,64 @@ result_file = results_path / "comparison_result.html"
 edw_path = results_path / "edw_data.csv"
 bi_path = results_path / "bi_data.csv"
 df_edw.to_csv(edw_path, index=False)
-df_bi.to_csv(bi_path, index=False)
+log.debug(f'EDW data has been saved to "{edw_path}"')
+df_pbi.to_csv(bi_path, index=False)
+log.debug(f'Power BI data has been saved to "{bi_path}"')
 
 # Save the comparison result to a file
 with open(result_file, "w", encoding="utf-8") as file:
     file.write(result_html)
+    log.debug(f'Comparison result has been saved to "{result_file}"')
 
 # Create the connectorcard object
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
 
 # If the comparation its ok do nothing, if not send a notification to the channel in teams
 if compare.matches():
+    SUMMARY = "Data comparison completed successfully"
+    MESSAGE = f"The data comparison has been completed successfully! There are no differences between the datasets."
+    markdown_table = f"{df_edw.to_markdown(index=False)}"
+    full_message = MESSAGE + "\n\n" + markdown_table
+
     # Add a summary to the message
-    myTeamsMessage.summary("Data comparison completed successfully")
+    myTeamsMessage.summary(SUMMARY)
 
     # Add text to the message
-    myTeamsMessage.text(
-        f"The data comparison has been completed successfully! There are no differences between the datasets."
-        f"\n\n{df_edw.to_markdown(index=False)}"
-    )
+    myTeamsMessage.text(full_message)
+
+    # Log the message
+    log.info("Data comparison completed successfully! Message sent to Microsoft Teams.")
+    log.debug(f"Microsoft Teams summary: {repr(SUMMARY)}")
+    log.debug(f"Microsoft Teams message: {repr(MESSAGE)}")
+    log.debug(f"EDW dataset/PBI dataset (They are the same on this run):\n{df_edw.to_markdown(index=False)}")
 else:
+    # Build the message
+    SUMMARY = "Data comparison completed with differences"
+    MESSAGE = "The data comparison has been completed, but there are differences between the datasets. See the comparison result below:"
+    edw_table_markdown = df_edw.to_markdown(index=False)
+    pbi_table_markdown = df_pbi.to_markdown(index=False)
+    comparison_result = result.to_markdown(index=False)
+    full_message = f"{MESSAGE}\n\nEDW dataset:\n\n{edw_table_markdown}\n\nPowerBI dataset:\n\n{pbi_table_markdown}\n\nComparison result:\n\n{comparison_result}"
+
     # Add a summary to the message
-    myTeamsMessage.summary("Data comparison completed with differences")
+    myTeamsMessage.summary(SUMMARY)
 
     # Add text to the message
-    myTeamsMessage.text(
-        "The data comparison has been completed, but there are differences between the datasets. See the comparison result below:\n\n"
-        f"Compare result:\n\n{result.to_markdown(index=False)}\n"
-        f"EDW dataset:\n\n{df_edw.to_markdown(index=False)}\n"
-        f"PowerBI dataset:\n\n{df_bi.to_markdown(index=False)}"
-    )
+    myTeamsMessage.text(full_message)
+
+    # Log the message
+    log.warning("Data comparison completed with differences! Message sent to Microsoft Teams.")
+    log.debug(f"Microsoft Teams summary: {repr(SUMMARY)}")
+    log.debug(f"Microsoft Teams message: {repr(MESSAGE)}")
+    log.debug(f"EDW dataset:\n{edw_table_markdown}")
+    log.debug(f"PowerBI dataset:\n{pbi_table_markdown}")
+    log.debug(f"Comparison result:\n{comparison_result}")
 
 # Send message
-# myTeamsMessage.send()
+myTeamsMessage.send()
 
 # Print to console
-print("The process has been completed!")
+log.info("The process has been completed!")
 
 # Close connections
 conn_EDW.close()
