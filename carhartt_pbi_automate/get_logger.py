@@ -6,7 +6,10 @@ import logging
 
 
 def get_logger(
-    name: str, logfile: Union[Path, str] = None, level: int = logging.DEBUG
+    name: str,
+    logfile: Union[Path, str] = None,
+    level: int = logging.DEBUG,
+    toConsole: bool = True,
 ) -> logging.Logger:
     """
     Get a logger object.
@@ -27,9 +30,6 @@ def get_logger(
     # set the logging level
     logger.setLevel(level)
 
-    # create a file handler
-    file_handler = logging.FileHandler(logfile)
-
     # create a formatter
     format_string = "%(asctime)s|%(name)s|%(levelname)s|%(message)s"
     formatter = logging.Formatter(format_string)
@@ -37,8 +37,22 @@ def get_logger(
     # Create the file if it does not exist, and write the column names
     touch_file(logfile, format_string)
 
+    # create a file handler
+    file_handler = logging.FileHandler(logfile)
+
     # set the formatter
     file_handler.setFormatter(formatter)
+
+    # set the logging level for the file handler
+    file_handler.setLevel(logging.DEBUG)
+
+    # If toConsole is True, create a console handler
+    if toConsole:
+        console_handler = logging.StreamHandler()
+        console_formatter = logging.Formatter("%(message)s")
+        console_handler.setFormatter(console_formatter)
+        console_handler.setLevel(logging.INFO)
+        logger.addHandler(console_handler)
 
     # add the file handler to the logger
     logger.addHandler(file_handler)
@@ -54,7 +68,6 @@ def touch_file(filepath: Union[Path, str], columns: str) -> None:
     """
     # Remove "%(", ")s" from the columns
     columns = columns.replace("%(", "").replace(")s", "")
-    print(columns)
 
     # Create the directory if it does not exist
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +80,10 @@ def touch_file(filepath: Union[Path, str], columns: str) -> None:
 
 
 if __name__ == "__main__":
-    touch_file(
-        "logs/test.log", "%(asctime)s|%(name)s|%(levelname)s|%(message)s"
-    )
+    # Send log messages
+    logger = get_logger("test", "logs/test.log")
+    logger.debug("This is a debug message.")
+    logger.info("This is an info message.")
+    logger.warning("This is a warning message.")
+    logger.error("This is an error message.")
+    logger.critical("This is a critical message.")
