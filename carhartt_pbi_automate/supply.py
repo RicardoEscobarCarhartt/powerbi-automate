@@ -17,6 +17,11 @@ def get_edw_start_end_dates(edw_data_frame: pd.DataFrame) -> tuple[str, str]:
         Start date: "2024-P07-Jan" convert into "2024-07"
         And End date: "2025-P06-Dec" convert into "2025-06"
     """
+    # if the data frame is empty, raise an error
+    if edw_data_frame.empty:
+        raise ValueError("The EDW data frame is empty.")
+
+    # get the minimum and maximum dates from the data frame
     start_date: str = edw_data_frame["YearPeriodMonth"].min()
     end_date: str = edw_data_frame["YearPeriodMonth"].max()
 
