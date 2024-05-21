@@ -133,9 +133,26 @@ print(
 
 # Extract data from Power BI
 cursor_data_BI = conn_BI.cursor()
-inventory_plans_start_month, inventory_plans_end_month = (
-    get_edw_start_end_dates(df_edw)
-)
+
+try:
+    inventory_plans_start_month, inventory_plans_end_month = (
+        get_edw_start_end_dates(df_edw)
+    )
+except ValueError as error:
+    print(f"Error: {error}")
+    print("Exiting the program...")
+    # Send a message to Teams
+    myTeamsMessage.summary("Data comparison failed")
+    myTeamsMessage.text(f"Error: {error}")
+    myTeamsMessage.text(
+        f"""<font color='red'>Error: {error}</font><br>
+        There could be an outage in the EDW database.<br>
+        Please check the logs for more information.<br>
+        """
+    )
+    myTeamsMessage.send()
+
+    exit()
 
 # Get the current date in the format "NIGHTLY-MM/DD/YYYY"
 print(f"Start month: {inventory_plans_start_month}")
@@ -229,7 +246,7 @@ else:
     )
 
 # Send message
-myTeamsMessage.send()
+# myTeamsMessage.send()
 
 # Print to console
 print("The process has been completed!")
