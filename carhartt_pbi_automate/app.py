@@ -255,7 +255,6 @@ if compare.matches():
     log.info("Data comparison completed successfully! Message sent to Microsoft Teams.")
     log.debug(f"Microsoft Teams summary: {repr(SUMMARY)}")
     log.debug(f"Microsoft Teams message: {repr(MESSAGE)}")
-    log.debug(f"EDW dataset/PBI dataset (They are the same on this run):\n{df_edw.to_markdown(index=False)}")
 else:
     # Build the message
     SUMMARY = "Data comparison completed with differences"
@@ -275,9 +274,6 @@ else:
     log.warning("Data comparison completed with differences! Message sent to Microsoft Teams.")
     log.debug(f"Microsoft Teams summary: {repr(SUMMARY)}")
     log.debug(f"Microsoft Teams message: {repr(MESSAGE)}")
-    log.debug(f"EDW dataset:\n{edw_table_markdown}")
-    log.debug(f"PowerBI dataset:\n{pbi_table_markdown}")
-    log.debug(f"Comparison result:\n{comparison_result}")
 
 # Send message
 myTeamsMessage.send()
