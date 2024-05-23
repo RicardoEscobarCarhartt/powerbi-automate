@@ -181,12 +181,18 @@ dax_query = get_dax_query(
 
 log.info("Extracting data from Power BI...")
 time_start = datetime.now()
+
+# Execute the DAX query
 cursor_data_BI.execute(dax_query)
 results_table = cursor_data_BI.fetchall()
+
+# Get the column names from the cursor, remove the brackets and create a list
 column_names = [
     column[0].replace("[", "").replace("]", "")
     for column in cursor_data_BI.description
 ]
+
+# Create a dataframe from the results
 data_table = list(results_table)
 df_pbi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
