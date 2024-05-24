@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 from connector import get_edw_connection, get_bi_connection
 from popup import detect_popup_window
-from supply import get_edw_start_end_dates, get_dax_query, trim_dax_columns
+from supply import get_edw_start_end_dates, trim_dax_columns
 from get_logger import get_logger
 from dax import pass_args_to_dax_query
 from parse_arguments import parse_arguments
