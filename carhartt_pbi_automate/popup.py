@@ -1,5 +1,22 @@
 import time
+from typing import List
+from pathlib import Path
+import logging
+import traceback
+import pywinauto
 from pywinauto.application import Application
+
+from get_logger import get_logger
+
+
+# Create a logger object
+root_path = Path(__file__).parent.parent
+log = get_logger(
+    __name__,
+    logfile=root_path / "logs" / "popup.log",
+    toConsole=True,
+    level=logging.DEBUG,
+)
 
 
 def create_test_popup():
@@ -10,29 +27,41 @@ def create_test_popup():
     app.Notepad.menu_select("Ayuda->Acerca del Bloc de Notas")
 
 
-def detect_popup_window(window_title=".*Iniciar sesión en la cuenta.*"):
+def detect_popup_window(window_title: List[str]):
     # Wait for the pop-up window to appear
-    app = Application().connect(title_re=window_title)
-    popup_window = app.window(title_re=window_title)
+    for title in window_title:
+        try:
+            app = Application().connect(title_re=title)
+            popup_window = app.window(title_re=title)
+            break
+        except pywinauto.findwindows.ElementNotFoundError as error:
+            stacktrace = traceback.format_exc()
+            log.error("Traceback: %s", stacktrace)
+            log.error("ElementNotFoundError: %s", error)
+            popup_window = None
+        except Exception as error:
+            stacktrace = traceback.format_exc()
+            log.error("Traceback: %s", stacktrace)
+            log.error("Error: %s", error)
+            popup_window = None
 
     if popup_window.exists():
-        print(f"Pop-up window detected! Title: {popup_window.window_text()}")
+        log.info("Pop-up window detected! Title: %s", popup_window.window_text())
         # Set focus to the pop-up window
         popup_window.set_focus()
 
         # Press tab key to navigate through the pop-up window, then press Enter
-        # Introduce a delay
         time.sleep(1)
-
-        # Send the keys
         popup_window.type_keys("{TAB}")
         time.sleep(1)
         popup_window.type_keys("{ENTER}")
+        log.info("Pop-up window closed.")
     else:
-        print("Pop-up window not found.")
+        log.info("Pop-up window not found.")
 
 
 if __name__ == "__main__":
+    titles = ["Acerca de Bloc de notas", "About Notepad"]
     create_test_popup()
     time.sleep(2)  # Wait for the pop-up to appear (adjust as needed)
-    detect_popup_window()
+    detect_popup_window(titles)
