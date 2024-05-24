@@ -3,6 +3,7 @@ project. This script extracts data from the EDW and Power BI databases,
 compares the supply data"""
 
 import os
+import sys
 import time
 from datetime import datetime
 import threading
@@ -19,7 +20,6 @@ from dotenv import load_dotenv
 
 from connector import get_edw_connection, get_bi_connection
 from popup import detect_popup_window
-from supply import get_edw_start_end_dates, trim_dax_columns
 from get_logger import get_logger
 from dax import pass_args_to_dax_query
 from parse_arguments import parse_arguments
@@ -80,15 +80,15 @@ conn_BI_result: List[adodbapi.Connection] = [None]
 # Parse script arguments
 try:
     script_args = parse_arguments()
-    log.debug(f"Script arguments: {script_args}")
-    log.debug(f"DAX file path: {script_args.daxfile}")
-    log.debug(f"SQL file path: {script_args.sqlfile}")
+    log.debug("Script arguments: %s", script_args)
+    log.debug("DAX file path: %s", script_args.daxfile)
+    log.debug("SQL file path: %s", script_args.sqlfile)
 except argparse.ArgumentError as error:
-    stack_trace = traceback.format_exc()
+    STACK_TRACE = traceback.format_exc()
     log.error("Error: %s", error)
-    log.error("Stack trace: %s", stack_trace)
+    log.error("Stack trace: %s", STACK_TRACE)
     log.critical("Failed to parse script arguments. Exiting the program.")
-    exit(1)
+    sys.exit(1)
 
 
 # Define a function that wraps get_bi_connection.
@@ -101,9 +101,8 @@ def get_connection(
     That's why the connection is saved in a list to be accessed, rather than
     returned.
     """
-    conn_BI = get_bi_connection(server, database)
     # Save the result in the list
-    conn_BI_result[0] = conn_BI
+    conn_BI_result[0] = get_bi_connection(server, database)
 
 
 script_start_time = datetime.now()
@@ -119,9 +118,9 @@ while True:
         log.info("Connection to EDW has been established!")
         break
     except Exception as error:
-        stack_trace = traceback.format_exc()
-        log.error(f"Error: {error}")
-        log.error(f"Stack trace: {stack_trace}")
+        STACK_TRACE = traceback.format_exc()
+        log.error("Error: %s", error)
+        log.error("Stack trace: %s", STACK_TRACE)
         log.info("Trying to connect again...")
         continue
 
@@ -155,9 +154,9 @@ while True:
                 if printed_once:
                     break
                 else:
-                    stack_trace = traceback.format_exc()
-                    log.error(f"Error: {error}")
-                    log.error(f"Stack trace: {stack_trace}")
+                    STACK_TRACE = traceback.format_exc()
+                    log.error("Error: %s", error)
+                    log.error("Stack trace: %s", STACK_TRACE)
                     log.info("Trying to log in again...")
                     printed_once = True
 
@@ -167,21 +166,21 @@ while True:
         # Get the connection from the list
         conn_BI = conn_BI_result[0]
         break
-    except Exception as error:
-        stack_trace = traceback.format_exc()
-        log.error(f"Error: {error}")
-        log.error(f"Stack trace: {stack_trace}")
+    except (pymsteams.TeamsWebhookException, adodbapi.DatabaseError) as error:
+        STACK_TRACE = traceback.format_exc()
+        log.error("Error: %s", error)
+        log.error("Stack trace: %s", STACK_TRACE)
         if retry_count:
             log.info("Trying to connect again...")
             retry_count -= 1
             continue
         else:
-            stack_trace = traceback.format_exc()
+            STACK_TRACE = traceback.format_exc()
             log.critical(
                 "Failed to connect. Exiting the program. Please check the logs for more information."
             )
-            log.critical(f"Stack trace: {stack_trace}")
-            exit(1)
+            log.critical("Stack trace: %s", STACK_TRACE)
+            sys.exit(1)
 
 log.info("Connection to Power BI has been established!")
 
@@ -190,13 +189,31 @@ teams_webhook_url = os.environ.get("TEAMS_WEBHOOK_URL")
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
 log.info("Connection to Teams has been established!")
 
-# Load supply.sql file and read the query
+# Load supply.sql file and run the query
 time_start = datetime.now()
 log.info("Extracting data from EDW...")
 supply_sql_filepath = Path(script_args.sqlfile)
 with open(supply_sql_filepath, "r", encoding="utf-8") as file:
     query_edw = file.read()
-    df_edw = pd.read_sql(query_edw, conn_EDW)
+    try:
+        df_edw = pd.read_sql(query_edw, conn_EDW)
+    except (pymsteams.TeamsWebhookException, adodbapi.DatabaseError) as error:
+        STACK_TRACE = traceback.format_exc()
+        # Send a message to Teams
+        myTeamsMessage.summary("Data comparison failed")
+        myTeamsMessage.text(f"Error: {error}")
+        myTeamsMessage.text(
+            f"""<font color='red'>Error: {error}</font><br>
+            There could be an outage in the EDW database.<br>
+            Please check the logs for more information.<br>
+            """
+        )
+        myTeamsMessage.send()
+
+        log.critical("Data comparison failed: %s", error)
+        log.critical("Stack trace: %s", STACK_TRACE)
+        sys.exit(1)
+
 end_time = datetime.now()
 time_diff = end_time - time_start
 
@@ -210,45 +227,14 @@ log.debug("It took: %s to extract data from EDW.", formated_duration)
 # Extract data from Power BI
 cursor_data_BI = conn_BI.cursor()
 
-try:
-    inventory_plans_start_month, inventory_plans_end_month = (
-        get_edw_start_end_dates(df_edw)
-    )
-    # Get the current date in the format "NIGHTLY-MM/DD/YYYY"
-    log.debug(f"Start month: {inventory_plans_start_month}")
-    log.debug(f"End month: {inventory_plans_end_month}")
-except ValueError as error:
-    stack_trace = traceback.format_exc()
-    # Send a message to Teams
-    myTeamsMessage.summary("Data comparison failed")
-    myTeamsMessage.text(f"Error: {error}")
-    myTeamsMessage.text(
-        f"""<font color='red'>Error: {error}</font><br>
-        There could be an outage in the EDW database.<br>
-        Please check the logs for more information.<br>
-        """
-    )
-    myTeamsMessage.send()
-
-    log.critical(f"Data comparison failed: {error}")
-    log.critical(f"Stack trace: {stack_trace}")
-    exit(1)
-
-
-now = datetime.now()
-plan_versions = f'"NIGHTLY-{now.month}/{now.day}/{now.year}"'
-log.debug(f"Plan_versions: {plan_versions}")
-
 # Load the DAX query from file
 dax_query = Path(script_args.daxfile).read_text(encoding="utf-8")
 
 # Pass the arguments to the DAX query
-args = {
-    "inventory_plans_start_month": inventory_plans_start_month,
-    "inventory_plans_end_month": inventory_plans_end_month,
-    "plan_versions": plan_versions,
-}
-
+now = datetime.now()
+plan_versions = f'"NIGHTLY-{now.month}/{now.day}/{now.year}"'
+log.debug("Plan_versions: %s", plan_versions)
+args = {"plan_versions": plan_versions}
 dax_query = pass_args_to_dax_query(dax_query, args)
 
 log.info("Extracting data from Power BI...")
@@ -259,7 +245,7 @@ try:
     cursor_data_BI.execute(dax_query)
     results_table = cursor_data_BI.fetchall()
 except Exception as error:
-    stack_trace = traceback.format_exc()
+    STACK_TRACE = traceback.format_exc()
 
     # Send a message to Teams
     myTeamsMessage.summary("Data comparison failed")
@@ -272,9 +258,9 @@ except Exception as error:
     )
     myTeamsMessage.send()
 
-    log.critical(f"Data comparison failed: {error}")
-    log.critical(f"Stack trace: {stack_trace}")
-    exit(1)
+    log.critical("Data comparison failed: %s", error)
+    log.critical("Stack trace: %s", STACK_TRACE)
+    sys.exit(1)
 
 # Get the column names from the cursor, remove the brackets and create a list
 column_names = [
@@ -294,16 +280,33 @@ formated_duration = get_formated_duration(time_diff)
 log.info("Data from Power BI has been extracted!")
 log.debug("Time to extract data from Power BI: %s", formated_duration)
 
-# Remove uneccesary the columns in the power bi dataframe,
-# rename the column Year/Period/Month to YearPeriodMonth
-df_pbi = trim_dax_columns(df_pbi)
+# Get the first column name from the dataframe
+# Assuming the first column is the same in both dataframes
+first_column = (
+    df_pbi.columns[0] if df_pbi.columns[0] == df_edw.columns[0] else None
+)
 
-# Apply ORDER BY YearPeriodMonth on both dataframes
-df_pbi = df_pbi.sort_values(by="YearPeriodMonth").reset_index(drop=True)
-df_edw = df_edw.sort_values(by="YearPeriodMonth").reset_index(drop=True)
+# If the first column is not the same, leave a log message and exit the program
+if first_column is None:
+    log.critical(
+        "The first column in the Power BI dataframe is not the same as in the EDW dataframe."
+    )
+    log.critical("Exiting the program.")
+    sys.exit(1)
+
+# Apply ORDER BY the first column on both dataframes
+df_pbi = df_pbi.sort_values(by=first_column).reset_index(drop=True)
+df_edw = df_edw.sort_values(by=first_column).reset_index(drop=True)
 
 # Use the datacompy library to compare the dataframes
-compare = datacompy.Compare(df_pbi, df_edw, on_index=True)
+compare = datacompy.Compare(
+    df_pbi,
+    df_edw,
+    on_index=True,
+    df1_name="PowerBI",
+    df2_name="EDW",
+    cast_column_names_lower=True,
+)
 compare.matches(ignore_extra_columns=False)
 result = compare.all_mismatch()
 result_html = result.to_html(index=False)
@@ -322,9 +325,9 @@ result_file = results_path / "comparison_result.html"
 edw_path = results_path / "edw_data.csv"
 bi_path = results_path / "bi_data.csv"
 df_edw.to_csv(edw_path, index=False)
-log.debug(f'EDW data has been saved to "{edw_path.resolve()}"')
+log.debug("EDW data has been saved to %s", edw_path.resolve())
 df_pbi.to_csv(bi_path, index=False)
-log.debug(f'Power BI data has been saved to "{bi_path.resolve()}"')
+log.debug("Power BI data has been saved to %s", bi_path.resolve())
 
 # Save the comparison result to a file
 with open(result_file, "w", encoding="utf-8") as file:
@@ -339,7 +342,7 @@ myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
 # If the comparation its ok do nothing, if not send a notification to the channel in teams
 if compare.matches():
     SUMMARY = "Data comparison completed successfully"
-    MESSAGE = f"The data comparison has been completed successfully! There are no differences between the datasets."
+    MESSAGE = "The data comparison has been completed successfully! There are no differences between the datasets."
     markdown_table = f"{df_edw.to_markdown(index=False)}"
     full_message = MESSAGE + "\n\n" + markdown_table
 
@@ -353,8 +356,8 @@ if compare.matches():
     log.info(
         "Data comparison completed successfully! Message sent to Microsoft Teams."
     )
-    log.debug(f"Microsoft Teams summary: {repr(SUMMARY)}")
-    log.debug(f"Microsoft Teams message: {repr(MESSAGE)}")
+    log.debug("Microsoft Teams summary: %s", repr(SUMMARY))
+    log.debug("Microsoft Teams message: %s", repr(MESSAGE))
 else:
     # Build the message
     SUMMARY = "Data comparison completed with differences"
@@ -374,11 +377,11 @@ else:
     log.warning(
         "Data comparison completed with differences! Message sent to Microsoft Teams."
     )
-    log.debug(f"Microsoft Teams summary: {repr(SUMMARY)}")
-    log.debug(f"Microsoft Teams message: {repr(MESSAGE)}")
+    log.debug("Microsoft Teams summary: %s", repr(SUMMARY))
+    log.debug("Microsoft Teams message: %s", repr(MESSAGE))
 
 # Send message
-myTeamsMessage.send()
+# myTeamsMessage.send()
 
 # Print to console
 log.info("The process has been completed!")
