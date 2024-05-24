@@ -42,8 +42,8 @@ try:
     log.debug(f"SQL file path: {script_args.sqlfile}")
 except argparse.ArgumentError as error:
     stack_trace = traceback.format_exc()
-    log.error(f"Error: {error}")
-    log.error(f"Stack trace: {stack_trace}")
+    log.error("Error: %s", error)
+    log.error("Stack trace: %s", stack_trace)
     log.critical("Failed to parse script arguments. Exiting the program.")
     exit(1)
 
@@ -160,7 +160,7 @@ formated_duration = get_formated_duration(time_diff)
 
 # Print the time taken to extract data from EDW
 log.info("Data from EDW has been extracted.")
-log.debug(f"It took: {formated_duration} to extract data from EDW.")
+log.debug("It took: %s to extract data from EDW.", formated_duration)
 
 # Extract data from Power BI
 cursor_data_BI = conn_BI.cursor()
@@ -247,7 +247,7 @@ time_diff = time_end - time_start
 # Calculate the time taken to extract data from Power BI
 formated_duration = get_formated_duration(time_diff)
 log.info("Data from Power BI has been extracted!")
-log.debug(f"Time to extract data from Power BI: {formated_duration}")
+log.debug("Time to extract data from Power BI: %s", formated_duration)
 
 # Remove uneccesary the columns in the power bi dataframe,
 # rename the column Year/Period/Month to YearPeriodMonth
@@ -284,7 +284,7 @@ log.debug(f'Power BI data has been saved to "{bi_path.resolve()}"')
 # Save the comparison result to a file
 with open(result_file, "w", encoding="utf-8") as file:
     file.write(result_html)
-    log.debug(f'Comparison result has been saved to "{result_file.resolve()}"')
+    log.debug('Comparison result has been saved to "%s"', result_file.resolve())
 
 # Create the connectorcard object
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
@@ -340,4 +340,4 @@ log.info("The process has been completed!")
 conn_EDW.close()
 conn_BI.close()
 
-log.debug(f"Ending the process {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+log.debug("Ending the process %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
