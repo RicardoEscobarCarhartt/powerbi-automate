@@ -5,19 +5,13 @@ import adodbapi
 from sqlalchemy import create_engine
 
 
-def get_edw_connection(
-    server: str = "DBNSQLQNET",
-    database: str = "CarharttDw",
-    driver: str = "ODBC Driver 17 for SQL Server",
-) -> adodbapi.Connection:
+def get_edw_connection(args: dict) -> adodbapi.Connection:
     """Returns a connection to the CarharttDw database.
     Args:
-        server (str): The server name.
-        database (str): The database name.
-        driver (str): The driver name.
+        args (dict): The arguments for the connection.
     Returns:
         adodbapi.Connection: The connection to the CarharttDw database."""
-    connection_string = f"mssql+pyodbc://{server}/{database}?driver={driver}&trusted_connection=yes"
+    connection_string = f"mssql+pyodbc://{args["server"]}/{args["database"]}?driver={args["driver"]}&trusted_connection=yes"
     engine = create_engine(connection_string, fast_executemany=True)
     return engine.connect()
 
