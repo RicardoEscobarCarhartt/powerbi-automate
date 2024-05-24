@@ -62,6 +62,10 @@ def get_connection():
     conn_BI_result[0] = conn_BI
 
 
+log.debug(
+    f"Starting the process {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+)
+
 # Connect to the EDW database.
 log.info("Connecting to EDW...")
 while True:
@@ -273,14 +277,14 @@ result_file = results_path / "comparison_result.html"
 edw_path = results_path / "edw_data.csv"
 bi_path = results_path / "bi_data.csv"
 df_edw.to_csv(edw_path, index=False)
-log.debug(f'EDW data has been saved to "{edw_path}"')
+log.debug(f'EDW data has been saved to "{edw_path.resolve()}"')
 df_pbi.to_csv(bi_path, index=False)
-log.debug(f'Power BI data has been saved to "{bi_path}"')
+log.debug(f'Power BI data has been saved to "{bi_path.resolve()}"')
 
 # Save the comparison result to a file
 with open(result_file, "w", encoding="utf-8") as file:
     file.write(result_html)
-    log.debug(f'Comparison result has been saved to "{result_file}"')
+    log.debug(f'Comparison result has been saved to "{result_file.resolve()}"')
 
 # Create the connectorcard object
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
@@ -335,3 +339,5 @@ log.info("The process has been completed!")
 # Close connections
 conn_EDW.close()
 conn_BI.close()
+
+log.debug(f"Ending the process {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

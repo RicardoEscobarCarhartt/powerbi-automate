@@ -25,7 +25,3 @@ echo python "%DIR%\carhartt_pbi_automate\run_supply.py" --daxfile %ARG1% --sqlfi
 
 @REM Deactivate the virtual environment
 call venv\Scripts\deactivate
-
-@REM Write the timestamp to the log file
-echo "Ran automagically at: %date% %time%" >> "%USERPROFILE%\OneDrive - Carhartt Inc\Documents\git\powerbi-automate\carhartt_pbi_automate\log.txt"
-pause
