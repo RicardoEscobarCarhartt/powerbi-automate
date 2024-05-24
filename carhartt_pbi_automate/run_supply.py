@@ -1,5 +1,6 @@
 """This module contains the main code for the Carhartt Power BI Automation
-project."""
+project. This script extracts data from the EDW and Power BI databases,
+compares the supply data"""
 
 import os
 import time
@@ -24,8 +25,50 @@ from dax import pass_args_to_dax_query
 from parse_arguments import parse_arguments
 from get_formated_duration import get_formated_duration
 
+
+# Constants
+# The path to the directory where the script is located
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+# The path to project root directory
+ROOT_DIR = SCRIPT_DIR.parent
+
+# The path to the directory where the logs are stored
+LOGS_DIR = ROOT_DIR / "logs"
+
+# Log name
+LOG_NAME = "run_supply"
+
+# Log file path
+LOG_FILE = (LOGS_DIR / LOG_NAME).with_suffix(".log")
+
+
+# The path to the directory where the results are stored
+RESULTS_DIR = ROOT_DIR / "results"
+
+# The path to the directory where the DAX and SQL files are stored
+QUERIES_DIR = ROOT_DIR / "queries"
+
 # Create a logger object
-log = get_logger("carhartt_pbi_automate", "logs/carhartt_pbi_automate.log")
+log = get_logger(LOG_NAME, LOG_FILE)
+
+# Arguments for EDW and Power BI connections
+EDW_ARGS = {
+    "server": "DBNSQLPNET",
+    "database": "CarharttDw",
+    "driver": "ODBC Driver 17 for SQL Server",
+}
+
+PBI_ARGS = {
+    "server": "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets",
+    "database": "Supply",
+}
+
+# Detect the pop-up window titles
+POPUP_WINDOW_TITLES = [
+    ".*Sign in to your account.*",
+    ".*Iniciar sesión en la cuenta.*",
+]
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,28 +92,30 @@ except argparse.ArgumentError as error:
 
 
 # Define a function that wraps get_bi_connection.
-def get_connection():
+def get_connection(
+    server: str = "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets",
+    database: str = "Supply",
+):
     """
     Get the connection to Power BI. This function is called from a Thread.
     That's why the connection is saved in a list to be accessed, rather than
     returned.
     """
-    conn_BI = get_bi_connection(
-        "powerbi://api.powerbi.com/v1.0/myorg/BI-Datasets", "Supply"
-    )
+    conn_BI = get_bi_connection(server, database)
     # Save the result in the list
     conn_BI_result[0] = conn_BI
 
 
+script_start_time = datetime.now()
 log.debug(
-    f"Starting the process {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    "Starting the process %s", script_start_time.strftime("%Y-%m-%d %H:%M:%S")
 )
 
 # Connect to the EDW database.
 log.info("Connecting to EDW...")
 while True:
     try:
-        conn_EDW = get_edw_connection("DBNSQLPNET")
+        conn_EDW = get_edw_connection(EDW_ARGS)
         log.info("Connection to EDW has been established!")
         break
     except Exception as error:
@@ -86,7 +131,7 @@ retry_count = 3
 while True:
     try:
         # Create a thread for get_connection
-        thread1 = threading.Thread(target=get_connection)
+        thread1 = threading.Thread(target=get_connection, kwargs=PBI_ARGS)
 
         # Start the thread
         thread1.start()
@@ -103,7 +148,7 @@ while True:
                 if conn_BI_result[0] is not None:
                     break
                 # Call detect_popup_window while get_connection is running in the other thread
-                detect_popup_window(".*Sign in to your account.*")
+                detect_popup_window(POPUP_WINDOW_TITLES)
                 is_powerbi_logged_in = True
             except Exception as error:
                 time.sleep(2)
@@ -152,8 +197,8 @@ supply_sql_filepath = Path(script_args.sqlfile)
 with open(supply_sql_filepath, "r", encoding="utf-8") as file:
     query_edw = file.read()
     df_edw = pd.read_sql(query_edw, conn_EDW)
-time_end = datetime.now()
-time_diff = time_end - time_start
+end_time = datetime.now()
+time_diff = end_time - time_start
 
 # Calculate the time taken to extract data from EDW
 formated_duration = get_formated_duration(time_diff)
@@ -241,8 +286,8 @@ column_names = [
 data_table = list(results_table)
 df_pbi = pd.DataFrame(data_table, columns=column_names)
 cursor_data_BI.close()
-time_end = datetime.now()
-time_diff = time_end - time_start
+end_time = datetime.now()
+time_diff = end_time - time_start
 
 # Calculate the time taken to extract data from Power BI
 formated_duration = get_formated_duration(time_diff)
@@ -284,7 +329,9 @@ log.debug(f'Power BI data has been saved to "{bi_path.resolve()}"')
 # Save the comparison result to a file
 with open(result_file, "w", encoding="utf-8") as file:
     file.write(result_html)
-    log.debug('Comparison result has been saved to "%s"', result_file.resolve())
+    log.debug(
+        'Comparison result has been saved to "%s"', result_file.resolve()
+    )
 
 # Create the connectorcard object
 myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
@@ -340,4 +387,10 @@ log.info("The process has been completed!")
 conn_EDW.close()
 conn_BI.close()
 
-log.debug("Ending the process %s", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+script_end_time = datetime.now()
+script_duration = get_formated_duration(script_end_time - script_start_time)
+log.debug(
+    "Ending the process at: %s Duration: %s",
+    end_time.strftime("%Y-%m-%d %H:%M:%S"),
+    script_duration,
+)
