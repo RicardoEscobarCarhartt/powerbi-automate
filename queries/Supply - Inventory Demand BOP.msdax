@@ -4,7 +4,7 @@ DEFINE
 		TREATAS({"NIGHTLY"}, 'Plan Versions'[Plan Version])
 
 	VAR __DS0FilterTable2 = 
-		TREATAS({"NIGHTLY-5/24/2024"}, 'Plan Versions'[Plan Name])
+		TREATAS({@plan_versions}, 'Plan Versions'[Plan Name])
 
 	VAR __DS0FilterTable3 = 
 		TREATAS({-1,
