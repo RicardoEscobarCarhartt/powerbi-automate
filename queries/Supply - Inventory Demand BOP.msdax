@@ -1,0 +1,44 @@
+// DAX Query
+DEFINE
+	VAR __DS0FilterTable = 
+		TREATAS({"NIGHTLY"}, 'Plan Versions'[Plan Version])
+
+	VAR __DS0FilterTable2 = 
+		TREATAS({"NIGHTLY-5/24/2024"}, 'Plan Versions'[Plan Name])
+
+	VAR __DS0FilterTable3 = 
+		TREATAS({-1,
+			0,
+			1,
+			2,
+			3,
+			4,
+			5,
+			6,
+			BLANK()}, 'Dates'[Current Month Offset])
+
+	VAR __DS0FilterTable4 = 
+		FILTER(
+			KEEPFILTERS(VALUES('Products'[Is Licensed])),
+			AND('Products'[Is Licensed] IN {"N"}, NOT('Products'[Is Licensed] IN {BLANK()}))
+		)
+
+	VAR __DS0Core = 
+		SUMMARIZECOLUMNS(
+			'Dates'[Year/Period/Month],
+			__DS0FilterTable,
+			__DS0FilterTable2,
+			__DS0FilterTable3,
+			__DS0FilterTable4,
+			"BOP_Inventory_Units", 'Inventory Plans'[BOP Inventory Units],
+			"EOP_Inventory_Units", 'Inventory Plans'[EOP Inventory Units],
+			"Forward_Weeks_Of_Coverage_Units", 'Inventory Plans'[Forward Weeks Of Coverage Units],
+			"Safety_Stock_Units", 'Inventory Plans'[Safety Stock Units]
+		)
+
+
+
+EVALUATE
+	__DS0Core
+
+
