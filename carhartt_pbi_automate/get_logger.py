@@ -25,10 +25,10 @@ def get_logger(
         logfile = f"{name}.log"
 
     # create a logger object
-    logger = logging.getLogger(name)
+    created_logger = logging.getLogger(name)
 
     # set the logging level
-    logger.setLevel(level)
+    created_logger.setLevel(level)
 
     # create a formatter
     format_string = "%(asctime)s|%(name)s|%(levelname)s|%(message)s"
@@ -52,11 +52,11 @@ def get_logger(
         console_formatter = logging.Formatter("%(message)s")
         console_handler.setFormatter(console_formatter)
         console_handler.setLevel(logging.INFO)
-        logger.addHandler(console_handler)
+        created_logger.addHandler(console_handler)
 
     # add the file handler to the logger
-    logger.addHandler(file_handler)
-    return logger
+    created_logger.addHandler(file_handler)
+    return created_logger
 
 
 def touch_file(filepath: Union[Path, str], columns: str) -> None:
@@ -74,7 +74,6 @@ def touch_file(filepath: Union[Path, str], columns: str) -> None:
 
     # Create the file if it does not exist
     if not Path(filepath).exists():
-        Path(filepath).touch()
         with open(filepath, "w", encoding="utf-8") as file:
             file.write(columns + "\n")
 

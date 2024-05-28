@@ -24,6 +24,7 @@ from get_logger import get_logger
 from dax import pass_args_to_dax_query
 from parse_arguments import parse_arguments
 from get_formated_duration import get_formated_duration
+from send_teams_message import send_ok_teams_message, send_fail_teams_message
 
 
 # Constants
@@ -307,9 +308,8 @@ compare = datacompy.Compare(
     df2_name="EDW",
     cast_column_names_lower=True,
 )
-compare.matches(ignore_extra_columns=False)
-result = compare.all_mismatch()
-result_html = result.to_html(index=False)
+compare.matches(ignore_extra_columns=True)
+result = compare.all_rows_overlap()
 
 # Generate a timestamp to use in the result file name
 timestamp = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
@@ -321,6 +321,11 @@ results_path.mkdir(parents=True, exist_ok=True)
 # Create the comparison result file
 result_file = results_path / "comparison_result.html"
 
+# Save the comparison result to a file
+HTML_FILE = str(result_file.resolve())
+compare_report = compare.report(html_file=HTML_FILE)
+log.debug("Comparison result has been saved to %s", HTML_FILE)
+
 # Save the dataframes to csv files
 edw_path = results_path / "edw_data.csv"
 bi_path = results_path / "bi_data.csv"
@@ -329,49 +334,84 @@ log.debug("EDW data has been saved to %s", edw_path.resolve())
 df_pbi.to_csv(bi_path, index=False)
 log.debug("Power BI data has been saved to %s", bi_path.resolve())
 
-# Save the comparison result to a file
-with open(result_file, "w", encoding="utf-8") as file:
-    file.write(result_html)
-    log.debug(
-        'Comparison result has been saved to "%s"', result_file.resolve()
-    )
-
-# Create the connectorcard object
-myTeamsMessage = pymsteams.connectorcard(teams_webhook_url)
-
 # If the comparation its ok do nothing, if not send a notification to the channel in teams
 if compare.matches():
-    SUMMARY = "Data comparison completed successfully"
-    MESSAGE = "The data comparison has been completed successfully! There are no differences between the datasets."
-    markdown_table = f"{df_edw.to_markdown(index=False)}"
-    full_message = MESSAGE + "\n\n" + markdown_table
-
-    # Add a summary to the message
-    myTeamsMessage.summary(SUMMARY)
-
-    # Add text to the message
-    myTeamsMessage.text(full_message)
-
-    # Log the message
-    log.info(
-        "Data comparison completed successfully! Message sent to Microsoft Teams."
-    )
-    log.debug("Microsoft Teams summary: %s", repr(SUMMARY))
-    log.debug("Microsoft Teams message: %s", repr(MESSAGE))
-else:
     # Build the message
+    SUMMARY = "Data comparison completed successfully"
+    MESSAGE = """<p>The data comparison has been completed successfully!</p>
+    <p>There are no differences between the datasets.</p>
+    <hr>
+    """
+    SECTION_TITLE = "Current data in EDW and Power BI"
+
+    # this is the title of the notification in teams, to differentiate between
+    # the different notifications
+    notification_title = "✔ " + Path(script_args.daxfile).stem
+
+    # Create a markdown table from the dataframe, this is the table that will
+    # be sent to Teams
+    markdown_table = f"{df_edw.to_markdown(index=False)}"
+
+    # Create the args dictionary to pass to the function
+    message_args = {
+        "teams_webhook_url": teams_webhook_url,
+        "color": "00FF00",  # Green color in hex
+        "notification_title": notification_title,
+        "message": MESSAGE,
+        "section_title": SECTION_TITLE,
+        "section_text": markdown_table,
+    }
+
+    # Run the function to send the message to Teams
+    if send_ok_teams_message(message_args):
+        # Log the message
+        log.info(
+            "Data comparison completed successfully! Message sent to Microsoft Teams."
+        )
+    else:
+        log.critical("Failed to send message to Microsoft Teams!")
+        log.critical("Please check the logs for more information.")
+        sys.exit(1)
+
+    # TODO: Remove the following lines after testing
+    # TODO: Remove the previous lines after testing
+else:
+    # Build the message when there are differences
     SUMMARY = "Data comparison completed with differences"
-    MESSAGE = "The data comparison has been completed, but there are differences between the datasets. See the comparison result below:"
+    MESSAGE = """<p>The data comparison has been completed,
+    but there are differences between the datasets.</p>
+    <hr>
+    """
+    EDW_SECTION_TITLE = "Current data in EDW"
+    PBI_SECTION_TITLE = "Current data in Power BI"
+
+    # this is the title of the notification in teams, to differentiate between
+    # the different notifications
+    notification_title = "❌ " + Path(script_args.daxfile).stem
+
+    # Create a markdown table from the dataframes
     edw_table_markdown = df_edw.to_markdown(index=False)
     pbi_table_markdown = df_pbi.to_markdown(index=False)
-    comparison_result = result.to_markdown(index=False)
-    full_message = f"{MESSAGE}\n\nEDW dataset:\n\n{edw_table_markdown}\n\nPowerBI dataset:\n\n{pbi_table_markdown}\n\nComparison result:\n\n{comparison_result}"
 
-    # Add a summary to the message
-    myTeamsMessage.summary(SUMMARY)
+    # Create the args dictionary to pass to the function
+    message_args = {
+        "teams_webhook_url": teams_webhook_url,
+        "color": "FF0000",  # Red color in hex
+        "notification_title": notification_title,
+        "message": MESSAGE,
+        "compare_report": compare_report,
+    }
 
-    # Add text to the message
-    myTeamsMessage.text(full_message)
+    # Run the function to send the message to Teams
+    if send_fail_teams_message(args):
+        # Log the message
+        log.info(
+            "Data comparison completed successfully! Message sent to Microsoft Teams."
+        )
+    else:
+        log.critical("Failed to send message to Microsoft Teams!")
+        log.critical("Please check the logs for more information.")
+        sys.exit(1)
 
     # Log the message
     log.warning(
@@ -380,8 +420,6 @@ else:
     log.debug("Microsoft Teams summary: %s", repr(SUMMARY))
     log.debug("Microsoft Teams message: %s", repr(MESSAGE))
 
-# Send message
-# myTeamsMessage.send()
 
 # Print to console
 log.info("The process has been completed!")
