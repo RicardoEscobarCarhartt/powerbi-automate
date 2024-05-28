@@ -24,7 +24,7 @@ AS (SELECT [DT].[YearPeriodMonth],
             ON [DT].[DateKey] = [SCP].[FiscalWeekDateKey]
         INNER JOIN WeeksOfPeriods LW
             ON [DT].[YearPeriodMonth] = [LW].[YearPeriodMonth]
-               AND [DT].[WeekOfYear] = [LW].[FirstWeekOfPeriod] -- Cambio hecho aquí
+               AND [DT].[WeekOfYear] = [LW].[FirstWeekOfPeriod] -- Cambio hecho aquï¿½
         INNER JOIN [Dimensions].[Products] P
             ON [P].[ProductKey] = [SCP].[ProductKey]
     WHERE [SCP].[PlanType] = 'NIGHTLY'
@@ -36,7 +36,7 @@ AS (SELECT [DT].[YearPeriodMonth],
              [DT].[WeekOfYear])
 
 --- EOP and measures that use MAX date
-SELECT [DT].[YearPeriodMonth] AS "DatesYear/Period/Month",
+SELECT TRIM([DT].[YearPeriodMonth]) AS "DatesYear/Period/Month",
        [B].[BOP_Inventory_Units],
        SUM([SCP].[EndingInventoryUnitsActual]) AS 'EOP_Inventory_Units',
        SUM([SCP].[TargetWeeksOfCoverageUnits]) AS 'Forward_Weeks_Of_Coverage_Units',
