@@ -1,5 +1,6 @@
 """This module contains the database code to store data in a local file using
 the SQLite3 database engine."""
+
 import sqlite3
 from pathlib import Path
 from typing import List, Union
@@ -24,11 +25,12 @@ class Database:
             else:
                 raise TypeError(
                     (
-                        f"initial_sql_script must be a Path or str."
+                        f"initial_sql_script must be a Path or str. "
                         f"Not {type(initial_sql_script)}"
                     )
                 )
 
+            # Create the parent directory if it does not exist
             self.initial_sql_script.parent.mkdir(parents=True, exist_ok=True)
             with open(
                 self.initial_sql_script, "r", encoding="utf-8"
@@ -38,6 +40,10 @@ class Database:
                 self.conn.executescript(sql)
                 self.conn.commit()
                 self.conn.close()
+        else:
+            raise ValueError(
+                "initial_sql_script not provided, must be a Path or str."
+            )
 
         if isinstance(db_file, str):
             if db_file == ":memory:":
