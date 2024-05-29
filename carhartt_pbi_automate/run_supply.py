@@ -289,7 +289,10 @@ first_column = (
 
 # If the first column is not the same, leave a log message and exit the program
 if first_column:
-    log.debug("First column: \"%s\". This is used to order rows in the final table that goes in the Microsoft Teams message.", first_column)
+    log.debug(
+        'First column: "%s". This is used to order rows in the final table that goes in the Microsoft Teams message.',
+        first_column,
+    )
 else:
     log.critical(
         "The first column in the Power BI dataframe is not the same as in the EDW dataframe."
