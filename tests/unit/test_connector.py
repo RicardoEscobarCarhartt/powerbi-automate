@@ -9,31 +9,35 @@ from carhartt_pbi_automate.connector import (
 )
 
 
-# "sqlalchemy.engine.create.create_engine" is the full path to the function
-# that needs to be patched
-@patch("sqlalchemy.engine.base.Connection")
-@patch("sqlalchemy.engine.create.create_engine")
-def test_get_edw_connection(mock_create_engine, mock_connection):
+
+@patch("carhartt_pbi_automate.connector.create_engine")
+def test_get_edw_connection(mock_create_engine):
     """Tests the get_edw_connection function."""
-    # Create a mock engine with a connect method
+    # Mock create_engine return value
     mock_engine = Mock()
-    # mock_connection = Mock()
-    mock_engine.connect.return_value = mock_connection
+    mock_engine.connect.return_value = Mock()
     mock_create_engine.return_value = mock_engine
 
+
+    # Arguments and expected result
     args = {
         "server": "server",
         "database": "database",
         "driver": "driver",
     }
-    # Call the function with the mocked engine
+    expected_connection_string = f"mssql+pyodbc://{args["server"]}/{args["database"]}?driver={args["driver"]}&trusted_connection=yes"
+
+    # Act
     result = get_edw_connection(args)
-    # Assert that the connect method was called on the mocked engine
-    assert mock_engine.connect.called
-    # Assert that the result is the mocked connection
-    assert result == mock_connection
 
+    # Assert
+    # engine = create_engine(connection_string, fast_executemany=True)
+    mock_create_engine.assert_called_with(expected_connection_string, fast_executemany=True)
 
+    # Assert
+    # return engine.connect()
+    assert result == mock_engine.connect.return_value
+    
 
 if __name__ == "__main__":
     pytest.main()
