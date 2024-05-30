@@ -374,6 +374,7 @@ def test_get_columns_with_invalid_table_name_type(db_path, get_script):  # pylin
     # Act
     with pytest.raises(TypeError) as exc:
         result = db.get_columns(table_name)
+        assert result == []
 
     # Assert
     # Assert the error message
