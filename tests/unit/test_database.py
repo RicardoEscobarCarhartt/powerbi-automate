@@ -1,6 +1,5 @@
 """This module contains unit tests for the database module."""
 
-from unittest.mock import Mock, patch
 from pathlib import Path
 
 import pytest
@@ -15,7 +14,7 @@ def db_path():
 
 
 @pytest.fixture(scope="module")
-def script_path(db_path):
+def script_path(db_path):  # pylint: disable=W0621
     """Returns a temporary SQL script file path."""
     sql_script = db_path.replace(".db", ".sql")
     return sql_script
@@ -23,7 +22,7 @@ def script_path(db_path):
 
 # This fixture creates a temporary SQL script file
 @pytest.fixture(scope="module")
-def get_script(script_path):
+def get_script(script_path):  # pylint: disable=W0621
     """Creates a temporary SQL script file."""
     with open(script_path, "w", encoding="utf-8") as file:
         file.write(
@@ -34,16 +33,18 @@ def get_script(script_path):
     # Clean up
     Path(script_path).unlink()
 
+
 # Remove the 'test.db' file after the tests are done
 @pytest.fixture(scope="module", autouse=True)
-def remove_db_file(db_path):
+def remove_db_file(db_path):  # pylint: disable=W0621
     """Removes the test database file."""
     yield
 
     # Clean up
     Path(db_path).unlink()
 
-def test_create_database_object(get_script):
+
+def test_create_database_object(get_script):  # pylint: disable=W0621
     """Tests the Database class."""
     # SQLite3 connection allows for a database to be created in memory, I use
     # this to test the Database class without creating a file or mocking the
@@ -61,7 +62,9 @@ def test_create_database_object(get_script):
 
 
 # @pytest.mark.skip(reason="This test is not working")
-def test_create_database_object_with_file(db_path, get_script):
+def test_create_database_object_with_file(
+    db_path, get_script
+):  # pylint: disable=W0621
     """Tests the Database class with an initial sql script file."""
     # Arrange and Act
     db = Database(db_file=db_path, initial_sql_script=get_script)
@@ -79,7 +82,7 @@ def test_create_database_object_with_file(db_path, get_script):
 
 def test_create_database_object_with_missing_initial_sql_script(
     db_path,
-):
+):  # pylint: disable=W0621
     """Tests the Database class with a missing initial sql script."""
     # Assert raises a ValueError if initial_sql_script does not exist
     with pytest.raises(ValueError) as exc:
@@ -93,7 +96,7 @@ def test_create_database_object_with_missing_initial_sql_script(
 
 def test_create_database_object_with_invalid_initial_sql_script_type(
     db_path,
-):
+):  # pylint: disable=W0621
     """Tests the Database class with an invalid initial sql script."""
     # Assert raises a TypeError if initial_sql_script is not a Path or str
     with pytest.raises(TypeError) as exc:
@@ -107,7 +110,7 @@ def test_create_database_object_with_invalid_initial_sql_script_type(
 
 def test_create_database_object_validating_parent_directory(
     db_path, get_script
-):
+):  # pylint: disable=W0621
     """Tests the Database class with a valid parent directory."""
     # Arrange and Act
     db = Database(db_file=db_path, initial_sql_script=get_script)
