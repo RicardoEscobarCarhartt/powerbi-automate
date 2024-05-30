@@ -132,5 +132,14 @@ def test_create_database_object_validating_parent_directory(
     assert db.db_file.exists()
 
 
+def test_create_database_object_with_invalid_db_file_type(get_script):  # pylint: disable=W0621
+    """Tests the Database class with an invalid db_file type."""
+    # Assert raises a TypeError if db_file is not a Path or str
+    with pytest.raises(TypeError) as exc:
+        Database(db_file=1, initial_sql_script=get_script)
+
+    # Assert the error message
+    assert f"db_file must be a Path or str. Not {type(1)}" in str(exc.value)
+
 if __name__ == "__main__":
     pytest.main()
