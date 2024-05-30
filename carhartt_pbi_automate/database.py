@@ -127,10 +127,15 @@ class Database:
     def close(self):
         """Close the database."""
         if self.conn:
-            self.conn.close()
+            self.conn = self.conn.close()
 
     def get_columns(self, table_name: str) -> List[str]:
         """Return a list of columns in the table."""
+        # Validate table_name type
+        if not isinstance(table_name, str):
+            raise TypeError(
+                f"table_name must be a str. Not {type(table_name)}"
+            )
         self.open()
         sql = f"PRAGMA table_info({table_name});"
         self.cursor.execute(sql)
