@@ -179,14 +179,16 @@ def test_create_table(db_path, get_script):  # pylint: disable=W0621
 def test_insert(db_path, get_script):  # pylint: disable=W0621
     """Tests the insert method."""
     # Arrange
-    # TODO: Figure out why the test.db file is not being created by the time
     # the `db.cursor.execute(sql_query)` line is executed
     db = Database(db_path, get_script)
 
     assert get_script == "test.sql"
     table_name = "test_table"
     columns = ["id", "name"]
-    values = [1, "test"]
+    values = (
+        1,
+        "test",
+    )
     sql_query = "SELECT * FROM test_table;"
 
     # Act
@@ -198,8 +200,222 @@ def test_insert(db_path, get_script):  # pylint: disable=W0621
     db.cursor.execute(sql_query)
     rows = db.cursor.fetchall()
     for row in rows:
-        if row == tuple(values):
-            assert row == tuple(values)
+        if row == values:
+            assert row == values
+
+    # Close the database connection
+    db.close()
+
+
+def test_select(db_path, get_script):  # pylint: disable=W0621
+    """Tests the select method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "test_table"
+    columns = ["id", "name"]
+    values = (
+        1,
+        "test",
+    )
+    where = "id = 1"
+    sql_query = "SELECT * FROM test_table WHERE id = 1;"
+
+    # Act
+    db.insert(table_name, columns, values)
+    result = db.select(table_name, where=where, columns=columns)
+
+    # Assert
+    # Assert the row was selected
+    db.open()
+    db.cursor.execute(sql_query)
+    row = db.cursor.fetchone()
+    assert tuple(row) == values
+
+    # Convert the result to a list of tuples
+    result = [tuple(row) for row in result]
+
+    # Assert the result is the same as the row
+    assert result == [values]
+
+    # Close the database connection
+    db.close()
+
+
+def test_update(db_path, get_script):  # pylint: disable=W0621
+    """Tests the update method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "test_table"
+    columns = ["id", "name"]
+    values = (1, "name",)
+    new_values = (1, "new_name",)
+    where = "id = 1"
+    sql_query = "SELECT name FROM test_table WHERE id = 1;"
+
+    # Act
+    db.insert(table_name, columns, values)
+    db.update(table_name, columns, new_values, where)
+
+    # Assert
+    # Assert the row was updated
+    db.open()
+    db.cursor.execute(sql_query)
+    row = db.cursor.fetchone()
+    assert row[0] == new_values[1]
+
+    # Close the database connection
+    db.close()
+
+
+def test_delete(db_path, get_script):  # pylint: disable=W0621
+    """Tests the delete method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "test_table"
+    columns = ["id", "name"]
+    values = (1, "test",)
+    where = "id = 1"
+    sql_query = "SELECT * FROM test_table WHERE id = 1;"
+
+    # Act
+    db.insert(table_name, columns, values)
+    db.delete(table_name, where)
+
+    # Assert
+    # Assert the row was deleted
+    db.open()
+    db.cursor.execute(sql_query)
+    row = db.cursor.fetchone()
+    assert row is None
+
+    # Close the database connection
+    db.close()
+
+
+def test_open(db_path, get_script):  # pylint: disable=W0621
+    """Tests the open method."""
+    # Arrange
+    db = Database(db_path, get_script)
+
+    # Act
+    db.open()
+
+    # Assert
+    # Assert the connection is open
+    assert db.conn is not None
+
+    # Assert the cursor is open
+    assert db.cursor is not None
+
+    # Close the database connection
+    db.close()
+
+
+def test_close(db_path, get_script):  # pylint: disable=W0621
+    """Tests the close method."""
+    # Arrange
+    db = Database(db_path, get_script)
+
+    # Act
+    db.open()
+    db.close()
+
+    # Assert
+    # Assert the connection is closed
+    assert db.conn is None
+
+
+def test_get_columns(db_path, get_script):  # pylint: disable=W0621
+    """Tests the get_columns method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "test_table"
+    columns = ["id INTEGER PRIMARY KEY", "name TEXT"]
+    sql_query = "PRAGMA table_info(test_table);"
+
+    # Act
+    result = db.get_columns(table_name)
+
+    # Assert
+    # Assert the columns are returned
+    db.open()
+    db.cursor.execute(sql_query)
+    rows = db.cursor.fetchall()
+    columns = [row["name"] for row in rows]
+    assert columns == result
+
+    # Close the database connection
+    db.close()
+
+
+def test_get_columns_with_invalid_table_name(db_path, get_script):  # pylint: disable=W0621
+    """Tests the get_columns method with an invalid table name."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "invalid_table"
+
+    # Act
+    result = db.get_columns(table_name)
+
+    # Assert
+    # Assert the columns are returned
+    assert result == []
+
+    # Close the database connection
+    db.close()
+
+
+def test_get_columns_with_invalid_table_name_type(db_path, get_script):  # pylint: disable=W0621
+    """Tests the get_columns method with an invalid table name type."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = 1
+
+    # Act
+    with pytest.raises(TypeError) as exc:
+        result = db.get_columns(table_name)
+
+    # Assert
+    # Assert the error message
+    assert f"table_name must be a str. Not {type(1)}" in str(exc.value)
+
+    # Close the database connection
+    db.close()
+
+
+def test_get_tables(db_path, get_script):  # pylint: disable=W0621
+    """Tests the get_tables method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    sql_query = "SELECT name FROM sqlite_master WHERE type='table';"
+
+    # Act
+    result = db.get_tables()
+
+    # Assert
+    # Assert the tables are returned
+    db.open()
+    db.cursor.execute(sql_query)
+    tables = db.cursor.fetchall()
+    tables = [table["name"] for table in tables]
+    assert tables == result
+
+    # Close the database connection
+    db.close()
+
+
+def test_table_exists(db_path, get_script):  # pylint: disable=W0621
+    """Tests the table_exists method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "test_table"
+
+    # Act
+    result = db.table_exists(table_name)
+
+    # Assert
+    # Assert the table exists
+    assert result
 
     # Close the database connection
     db.close()
