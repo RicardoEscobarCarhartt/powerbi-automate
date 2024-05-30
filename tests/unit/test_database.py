@@ -21,27 +21,29 @@ def script_path(db_path):  # pylint: disable=W0621
 
 
 # This fixture creates a temporary SQL script file
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def get_script(script_path):  # pylint: disable=W0621
     """Creates a temporary SQL script file."""
     with open(script_path, "w", encoding="utf-8") as file:
         file.write(
             "CREATE TABLE test_table (id INTEGER PRIMARY KEY, name TEXT);"
         )
-        yield script_path
+
+    # Return the script path, must be outside the with block to allow the file
+    # to be closed before the path is returned
+    yield script_path
 
     # Clean up
-    Path(script_path).unlink()
+    Path(script_path).unlink(missing_ok=True)
 
 
 # Remove the 'test.db' file after the tests are done
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def remove_db_file(db_path):  # pylint: disable=W0621
     """Removes the test database file."""
     yield
-
     # Clean up
-    Path(db_path).unlink()
+    Path(db_path).unlink(missing_ok=True)
 
 
 def test_create_database_object(get_script):  # pylint: disable=W0621
@@ -78,6 +80,9 @@ def test_create_database_object_with_file(
 
     # Assert the db_file is a file
     assert db.db_file.is_file()
+
+    # Close the database connection
+    db.close()
 
 
 def test_create_database_object_with_missing_initial_sql_script(
@@ -131,8 +136,13 @@ def test_create_database_object_validating_parent_directory(
     # Assert the db file exists
     assert db.db_file.exists()
 
+    # Close the database connection
+    db.close()
 
-def test_create_database_object_with_invalid_db_file_type(get_script):  # pylint: disable=W0621
+
+def test_create_database_object_with_invalid_db_file_type(
+    get_script,
+):  # pylint: disable=W0621
     """Tests the Database class with an invalid db_file type."""
     # Assert raises a TypeError if db_file is not a Path or str
     with pytest.raises(TypeError) as exc:
@@ -140,6 +150,60 @@ def test_create_database_object_with_invalid_db_file_type(get_script):  # pylint
 
     # Assert the error message
     assert f"db_file must be a Path or str. Not {type(1)}" in str(exc.value)
+
+
+def test_create_table(db_path, get_script):  # pylint: disable=W0621
+    """Tests the create_table method."""
+    # Arrange
+    db = Database(db_path, get_script)
+    table_name = "new_table"
+    columns = ["id INTEGER PRIMARY KEY", "name TEXT"]
+    sql_query = "SELECT name FROM sqlite_master WHERE type='table';"
+
+    # Act
+    db.create_table(table_name, columns)
+
+    # Assert
+    # Assert the table was created
+    db.open()
+    db.cursor.execute(sql_query)
+    tables = db.cursor.fetchall()
+    for table in tables:
+        if table == table_name:
+            assert table == table_name
+
+    # Close the database connection
+    db.close()
+
+
+def test_insert(db_path, get_script):  # pylint: disable=W0621
+    """Tests the insert method."""
+    # Arrange
+    # TODO: Figure out why the test.db file is not being created by the time
+    # the `db.cursor.execute(sql_query)` line is executed
+    db = Database(db_path, get_script)
+
+    assert get_script == "test.sql"
+    table_name = "test_table"
+    columns = ["id", "name"]
+    values = [1, "test"]
+    sql_query = "SELECT * FROM test_table;"
+
+    # Act
+    db.insert(table_name, columns, values)
+
+    # Assert
+    # Assert the row was inserted
+    db.open()
+    db.cursor.execute(sql_query)
+    rows = db.cursor.fetchall()
+    for row in rows:
+        if row == tuple(values):
+            assert row == tuple(values)
+
+    # Close the database connection
+    db.close()
+
 
 if __name__ == "__main__":
     pytest.main()
