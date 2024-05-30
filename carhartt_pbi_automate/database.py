@@ -17,6 +17,21 @@ class Database:
         """Initialize the database."""
         self.conn = None
         self.cursor = None
+
+        # Set the database file, `db_file` attribute
+        if isinstance(db_file, str):
+            if db_file == ":memory:":
+                self.db_file = db_file
+            else:
+                self.db_file = Path(db_file)
+        elif isinstance(db_file, Path):
+            self.db_file = db_file
+            self.db_file.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            raise TypeError(
+                f"db_file must be a Path or str. Not {type(db_file)}"
+            )
+
         if initial_sql_script:
             if isinstance(initial_sql_script, Path):
                 self.initial_sql_script = initial_sql_script
@@ -44,17 +59,6 @@ class Database:
             raise ValueError(
                 "initial_sql_script not provided, must be a Path or str."
             )
-
-        if isinstance(db_file, str):
-            if db_file == ":memory:":
-                self.db_file = db_file
-            else:
-                self.db_file = Path(db_file)
-        elif isinstance(db_file, Path):
-            self.db_file = db_file
-            self.db_file.parent.mkdir(parents=True, exist_ok=True)
-        else:
-            raise TypeError("db_file must be a Path or str")
 
     def create_table(self, table_name: str, columns: List[str]):
         """Create a table in the database."""
@@ -123,10 +127,15 @@ class Database:
     def close(self):
         """Close the database."""
         if self.conn:
-            self.conn.close()
+            self.conn = self.conn.close()
 
     def get_columns(self, table_name: str) -> List[str]:
         """Return a list of columns in the table."""
+        # Validate table_name type
+        if not isinstance(table_name, str):
+            raise TypeError(
+                f"table_name must be a str. Not {type(table_name)}"
+            )
         self.open()
         sql = f"PRAGMA table_info({table_name});"
         self.cursor.execute(sql)
