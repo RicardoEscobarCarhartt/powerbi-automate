@@ -1,7 +1,5 @@
 """This module contains unit tests for the dax module."""
 
-from pathlib import Path
-
 import pytest
 
 from carhartt_pbi_automate.dax import pass_args_to_dax_query
