@@ -59,7 +59,7 @@ def get_logger(
     return created_logger
 
 
-def touch_file(filepath: Union[Path, str], columns: str) -> None:
+def touch_file(filepath: Union[Path, str], columns: str) -> str:
     """
     Create an empty file if it does not exist.
     Args:
@@ -76,6 +76,7 @@ def touch_file(filepath: Union[Path, str], columns: str) -> None:
     if not Path(filepath).exists():
         with open(filepath, "w", encoding="utf-8") as file:
             file.write(columns + "\n")
+    return filepath
 
 
 if __name__ == "__main__":
