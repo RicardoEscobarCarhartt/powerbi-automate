@@ -46,6 +46,7 @@ def remove_db_file(db_path):  # pylint: disable=W0621
     Path(db_path).unlink(missing_ok=True)
 
 
+@pytest.mark.unit
 def test_create_database_object(get_script):  # pylint: disable=W0621
     """Tests the Database class."""
     # SQLite3 connection allows for a database to be created in memory, I use
@@ -63,7 +64,7 @@ def test_create_database_object(get_script):  # pylint: disable=W0621
     assert isinstance(db.db_file, str)
 
 
-# @pytest.mark.skip(reason="This test is not working")
+@pytest.mark.unit
 def test_create_database_object_with_file(
     db_path, get_script
 ):  # pylint: disable=W0621
@@ -85,6 +86,7 @@ def test_create_database_object_with_file(
     db.close()
 
 
+@pytest.mark.unit
 def test_create_database_object_with_missing_initial_sql_script(
     db_path,
 ):  # pylint: disable=W0621
@@ -99,6 +101,7 @@ def test_create_database_object_with_missing_initial_sql_script(
     )
 
 
+@pytest.mark.unit
 def test_create_database_object_with_invalid_initial_sql_script_type(
     db_path,
 ):  # pylint: disable=W0621
@@ -113,6 +116,7 @@ def test_create_database_object_with_invalid_initial_sql_script_type(
     )
 
 
+@pytest.mark.unit
 def test_create_database_object_validating_parent_directory(
     db_path, get_script
 ):  # pylint: disable=W0621
@@ -140,6 +144,7 @@ def test_create_database_object_validating_parent_directory(
     db.close()
 
 
+@pytest.mark.unit
 def test_create_database_object_with_invalid_db_file_type(
     get_script,
 ):  # pylint: disable=W0621
@@ -152,6 +157,7 @@ def test_create_database_object_with_invalid_db_file_type(
     assert f"db_file must be a Path or str. Not {type(1)}" in str(exc.value)
 
 
+@pytest.mark.unit
 def test_create_table(db_path, get_script):  # pylint: disable=W0621
     """Tests the create_table method."""
     # Arrange
@@ -176,6 +182,7 @@ def test_create_table(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_insert(db_path, get_script):  # pylint: disable=W0621
     """Tests the insert method."""
     # Arrange
@@ -207,6 +214,7 @@ def test_insert(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_select(db_path, get_script):  # pylint: disable=W0621
     """Tests the select method."""
     # Arrange
@@ -241,14 +249,15 @@ def test_select(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_update(db_path, get_script):  # pylint: disable=W0621
     """Tests the update method."""
     # Arrange
     db = Database(db_path, get_script)
     table_name = "test_table"
     columns = ["id", "name"]
-    values = (1, "name",)
-    new_values = (1, "new_name",)
+    values = (1, "name")
+    new_values = (1, "new_name")
     where = "id = 1"
     sql_query = "SELECT name FROM test_table WHERE id = 1;"
 
@@ -267,13 +276,17 @@ def test_update(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_delete(db_path, get_script):  # pylint: disable=W0621
     """Tests the delete method."""
     # Arrange
     db = Database(db_path, get_script)
     table_name = "test_table"
     columns = ["id", "name"]
-    values = (1, "test",)
+    values = (
+        1,
+        "test",
+    )
     where = "id = 1"
     sql_query = "SELECT * FROM test_table WHERE id = 1;"
 
@@ -292,6 +305,7 @@ def test_delete(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_open(db_path, get_script):  # pylint: disable=W0621
     """Tests the open method."""
     # Arrange
@@ -311,6 +325,7 @@ def test_open(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_close(db_path, get_script):  # pylint: disable=W0621
     """Tests the close method."""
     # Arrange
@@ -325,6 +340,7 @@ def test_close(db_path, get_script):  # pylint: disable=W0621
     assert db.conn is None
 
 
+@pytest.mark.unit
 def test_get_columns(db_path, get_script):  # pylint: disable=W0621
     """Tests the get_columns method."""
     # Arrange
@@ -348,7 +364,10 @@ def test_get_columns(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
-def test_get_columns_with_invalid_table_name(db_path, get_script):  # pylint: disable=W0621
+@pytest.mark.unit
+def test_get_columns_with_invalid_table_name(
+    db_path, get_script
+):  # pylint: disable=W0621
     """Tests the get_columns method with an invalid table name."""
     # Arrange
     db = Database(db_path, get_script)
@@ -365,7 +384,10 @@ def test_get_columns_with_invalid_table_name(db_path, get_script):  # pylint: di
     db.close()
 
 
-def test_get_columns_with_invalid_table_name_type(db_path, get_script):  # pylint: disable=W0621
+@pytest.mark.unit
+def test_get_columns_with_invalid_table_name_type(
+    db_path, get_script
+):  # pylint: disable=W0621
     """Tests the get_columns method with an invalid table name type."""
     # Arrange
     db = Database(db_path, get_script)
@@ -384,6 +406,7 @@ def test_get_columns_with_invalid_table_name_type(db_path, get_script):  # pylin
     db.close()
 
 
+@pytest.mark.unit
 def test_get_tables(db_path, get_script):  # pylint: disable=W0621
     """Tests the get_tables method."""
     # Arrange
@@ -405,6 +428,7 @@ def test_get_tables(db_path, get_script):  # pylint: disable=W0621
     db.close()
 
 
+@pytest.mark.unit
 def test_table_exists(db_path, get_script):  # pylint: disable=W0621
     """Tests the table_exists method."""
     # Arrange

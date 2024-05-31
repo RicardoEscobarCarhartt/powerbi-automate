@@ -10,6 +10,7 @@ from carhartt_pbi_automate.connector import (
 )
 
 
+@pytest.mark.unit
 @patch("carhartt_pbi_automate.connector.create_engine")
 def test_get_edw_connection(mock_create_engine):
     """Tests the get_edw_connection function."""
@@ -39,6 +40,7 @@ def test_get_edw_connection(mock_create_engine):
     assert result == mock_engine.connect.return_value
 
 
+@pytest.mark.unit
 @patch("carhartt_pbi_automate.connector.adodbapi.connect")
 def test_get_bi_connection(mock_connect):
     """Tests the get_bi_connection function."""

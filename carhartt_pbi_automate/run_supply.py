@@ -233,7 +233,7 @@ dax_query = Path(script_args.daxfile).read_text(encoding="utf-8")
 
 # Pass the arguments to the DAX query
 now = datetime.now()
-plan_versions = f'"NIGHTLY-{now.month}/{now.day}/{now.year}"'
+plan_versions = f'NIGHTLY-{now.month}/{now.day}/{now.year}'
 log.debug("Plan_versions: %s", plan_versions)
 args = {"plan_versions": plan_versions}
 dax_query = pass_args_to_dax_query(dax_query, args)
