@@ -25,6 +25,7 @@ def non_string_args():
     return {"test_parameter": NonString()}
 
 
+@pytest.mark.unit
 def test_pass_args_to_dax_query(
     dax_query, non_string_args
 ):  # pylint: disable=W0621
