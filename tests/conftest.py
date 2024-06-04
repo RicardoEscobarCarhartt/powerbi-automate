@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 
 
+# Global fixtures
 @pytest.fixture(scope="function")
 def project_root():
     """Return the project root."""
-    yield Path(__file__).parent.parent.parent
+    yield Path(__file__).parent.parent
+
+
+# Modulirized fixtures
+pytest_plugins = ["tests.fixtures.get_logger"]
