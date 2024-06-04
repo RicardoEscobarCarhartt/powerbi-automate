@@ -19,12 +19,6 @@ def logger():
     Path("test_logger.log").unlink(missing_ok=True)
 
 
-@pytest.fixture(scope="function")
-def project_root():
-    """Return the project root."""
-    yield Path(__file__).parent.parent.parent
-
-
 @pytest.mark.unit
 def test_get_logger(
     logger: logging.Logger, project_root
