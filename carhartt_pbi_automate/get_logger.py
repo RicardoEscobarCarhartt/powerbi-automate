@@ -17,6 +17,7 @@ def get_logger(
         name (str): The name of the logger.
         logfile (Union[Path, str], optional): The logfile path. Defaults to None.
         level (int, optional): The logging level. Defaults to logging.DEBUG.
+        console_output (bool, optional): Whether to output logs to the console.
     Returns:
         logging.Logger: The logger object.
     """
