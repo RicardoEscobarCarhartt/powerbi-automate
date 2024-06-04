@@ -47,7 +47,7 @@ def get_logger(
     # set the logging level for the file handler
     file_handler.setLevel(logging.DEBUG)
 
-    # If toConsole is True, create a console handler
+    # If console_output is True, create a console handler
     if console_output:
         console_handler = logging.StreamHandler()
         console_formatter = logging.Formatter("%(message)s")
