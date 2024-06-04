@@ -14,7 +14,7 @@ root_path = Path(__file__).parent.parent
 log = get_logger(
     __name__,
     logfile=root_path / "logs" / "popup.log",
-    toConsole=True,
+    console_output=True,
     level=logging.DEBUG,
 )
 

@@ -9,7 +9,7 @@ def get_logger(
     name: str,
     logfile: Union[Path, str] = None,
     level: int = logging.DEBUG,
-    toConsole: bool = True,
+    console_output: bool = True,
 ) -> logging.Logger:
     """
     Get a logger object.
@@ -47,7 +47,7 @@ def get_logger(
     file_handler.setLevel(logging.DEBUG)
 
     # If toConsole is True, create a console handler
-    if toConsole:
+    if console_output:
         console_handler = logging.StreamHandler()
         console_formatter = logging.Formatter("%(message)s")
         console_handler.setFormatter(console_formatter)
