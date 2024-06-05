@@ -19,4 +19,6 @@ def parse_arguments() -> argparse.Namespace:
         help="File path to SQL query")
 
     args = parser.parse_args()
+    if args.daxfile is None or args.sqlfile is None:
+        raise ValueError("Both `--daxfile` and `--sqlfile` arguments cannot be None.")
     return args
