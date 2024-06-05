@@ -6,7 +6,6 @@ import logging
 
 import pytest
 
-from carhartt_pbi_automate.my_logger import MyLogger
 from carhartt_pbi_automate.database import Database
 
 
