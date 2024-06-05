@@ -13,4 +13,8 @@ def project_root() -> Path:
 
 
 # Modulirized fixtures
-pytest_plugins = ["tests.fixtures.get_logger", "tests.fixtures.my_logger"]
+pytest_plugins = [
+    "tests.fixtures.get_logger",
+    "tests.fixtures.my_logger",
+    "tests.fixtures.sqlite_handler",
+]
