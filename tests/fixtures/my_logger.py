@@ -20,7 +20,7 @@ def _initial_database_script(
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     # Write the initial database script
-    sql = """CREATE TABLE IF NOT EXISTS log_record (id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sql = r"""CREATE TABLE IF NOT EXISTS log_record (id INTEGER PRIMARY KEY AUTOINCREMENT,
     args TEXT, -- The tuple of arguments merged into msg to produce message, or a dict whose values are used for the merge (when there is only one argument, and it is a dictionary).
     asctime TEXT, -- Human-readable time when the LogRecord was created. By default this is of the form ‘2003-07-08 16:49:45,896’ (the numbers after the comma are millisecond portion of the time) asctime is local timezone where the database is running.
     asctime_utc TEXT, -- UTC time zone version of asctime
@@ -52,6 +52,7 @@ def _initial_database_script(
 
     yield filepath
     # Clean up the file
+    logging.shutdown()
     filepath.unlink(missing_ok=True)
 
 
