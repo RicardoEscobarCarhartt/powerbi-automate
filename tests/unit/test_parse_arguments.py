@@ -13,6 +13,9 @@ from carhartt_pbi_automate.parse_arguments import parse_arguments
 @pytest.mark.unit
 def test_parse_arguments(mock_parse_args, mock_add_argument):
     """Test the parse_arguments function."""
+    # Call the function
+    _ = parse_arguments()
+
     # Mock `parse_args` call
     mock_parse_args.assert_called_once()
 
