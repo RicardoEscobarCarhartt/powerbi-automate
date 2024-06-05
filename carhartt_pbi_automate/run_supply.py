@@ -118,7 +118,7 @@ while True:
         conn_EDW = get_edw_connection(EDW_ARGS)
         log.info("Connection to EDW has been established!")
         break
-    except Exception as error:
+    except Exception as error:  # pylint: disable=broad-except
         STACK_TRACE = traceback.format_exc()
         log.error("Error: %s", error)
         log.error("Stack trace: %s", STACK_TRACE)
@@ -126,8 +126,8 @@ while True:
         continue
 
 # Connect to Power BI database.
-is_powerbi_logged_in = False
-retry_count = 3
+IS_POWERBI_LOGGED_IN = False
+RETRY_COUNT = 3
 while True:
     try:
         # Create a thread for get_connection
@@ -141,16 +141,16 @@ while True:
         time.sleep(4)
 
         # Check if the pop-up window has been detected
-        printed_once = False
-        while not is_powerbi_logged_in:
+        printed_once = False  # pylint: disable=invalid-name
+        while not IS_POWERBI_LOGGED_IN:
             try:
                 # Check if the connection has been established
                 if conn_BI_result[0] is not None:
                     break
                 # Call detect_popup_window while get_connection is running in the other thread
                 detect_popup_window(POPUP_WINDOW_TITLES)
-                is_powerbi_logged_in = True
-            except Exception as error:
+                IS_POWERBI_LOGGED_IN = True
+            except Exception as error:  # pylint: disable=broad-except
                 time.sleep(2)
                 if printed_once:
                     break
@@ -165,15 +165,15 @@ while True:
         thread1.join()
 
         # Get the connection from the list
-        conn_BI = conn_BI_result[0]
+        conn_bi = conn_BI_result[0]  # pylint: disable=invalid-name
         break
     except (pymsteams.TeamsWebhookException, adodbapi.DatabaseError) as error:
         STACK_TRACE = traceback.format_exc()
         log.error("Error: %s", error)
         log.error("Stack trace: %s", STACK_TRACE)
-        if retry_count:
+        if RETRY_COUNT:
             log.info("Trying to connect again...")
-            retry_count -= 1
+            RETRY_COUNT -= 1
             continue
         else:
             STACK_TRACE = traceback.format_exc()
@@ -226,14 +226,14 @@ log.info("Data from EDW has been extracted.")
 log.debug("It took: %s to extract data from EDW.", formated_duration)
 
 # Extract data from Power BI
-cursor_data_BI = conn_BI.cursor()
+cursor_data_BI = conn_bi.cursor()
 
 # Load the DAX query from file
 dax_query = Path(script_args.daxfile).read_text(encoding="utf-8")
 
 # Pass the arguments to the DAX query
 now = datetime.now()
-plan_versions = f'NIGHTLY-{now.month}/{now.day}/{now.year}'
+plan_versions = f"NIGHTLY-{now.month}/{now.day}/{now.year}"
 log.debug("Plan_versions: %s", plan_versions)
 args = {"plan_versions": plan_versions}
 dax_query = pass_args_to_dax_query(dax_query, args)
@@ -245,7 +245,7 @@ time_start = datetime.now()
 try:
     cursor_data_BI.execute(dax_query)
     results_table = cursor_data_BI.fetchall()
-except Exception as error:
+except Exception as error:  # pylint: disable=broad-except
     STACK_TRACE = traceback.format_exc()
 
     # Send a message to Teams
@@ -290,7 +290,7 @@ first_column = (
 # If the first column is not the same, leave a log message and exit the program
 if first_column:
     log.debug(
-        'First column: "%s". This is used to order rows in the final table that goes in the Microsoft Teams message.',
+        'First column: "%s". This is used to order rows in the final table that goes in the Microsoft Teams message.',  # pylint: disable=line-too-long
         first_column,
     )
 else:
@@ -377,9 +377,6 @@ if compare.matches():
         log.critical("Failed to send message to Microsoft Teams!")
         log.critical("Please check the logs for more information.")
         sys.exit(1)
-
-    # TODO: Remove the following lines after testing
-    # TODO: Remove the previous lines after testing
 else:
     # Build the message when there are differences
     SUMMARY = "Data comparison completed with differences"
@@ -431,7 +428,7 @@ log.info("The process has been completed!")
 
 # Close connections
 conn_EDW.close()
-conn_BI.close()
+conn_bi.close()
 
 script_end_time = datetime.now()
 script_duration = get_formated_duration(script_end_time - script_start_time)
