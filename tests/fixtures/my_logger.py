@@ -63,6 +63,7 @@ def _log_file() -> Generator[Path, None, None]:
 
     yield filepath
     # Clean up the file
+    logging.shutdown()
     filepath.unlink(missing_ok=True)
 
 
