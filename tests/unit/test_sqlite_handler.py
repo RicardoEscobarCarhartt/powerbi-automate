@@ -1,6 +1,5 @@
 """This module contains tests for the sqlite_handler module."""
 
-from unittest.mock import patch
 from pathlib import Path
 import logging
 
