@@ -4,7 +4,10 @@ from unittest.mock import patch
 
 import pytest
 
-from carhartt_pbi_automate.send_teams_message import send_ok_teams_message, send_fail_teams_message
+from carhartt_pbi_automate.send_teams_message import (
+    send_ok_teams_message,
+    send_fail_teams_message,
+)
 
 
 @patch("carhartt_pbi_automate.send_teams_message.pymsteams.connectorcard")
@@ -17,11 +20,10 @@ def test_send_ok_teams_message(mock_connectorcard):
         "notification_title": "Test Notification",
         "message": "This is a test message.",
         "section_title": "Test Section",
-        "section_text": "This is a test section."
+        "section_text": "This is a test section.",
     }
     # Mock the send method of the connectorcard object
     mock_connectorcard.return_value.send.return_value = True
-
 
     # Call the send_ok_teams_message function
     response = send_ok_teams_message(args)
@@ -39,7 +41,7 @@ def test_send_fail_teams_message(mock_connectorcard):
         "message": "This is a test message.",
         "section_title": "Test Section",
         "section_text": "This is a test section.",
-        "compare_report": "This is a test comparison report."
+        "compare_report": "This is a test comparison report.",
     }
     # Mock the send method of the connectorcard object
     mock_connectorcard.return_value.send.return_value = False
