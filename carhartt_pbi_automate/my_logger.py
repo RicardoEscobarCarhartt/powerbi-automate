@@ -1,4 +1,5 @@
 """This module creates a logger for the application."""
+
 import logging
 from pathlib import Path
 from typing import Union
@@ -65,8 +66,11 @@ class MyLogger(logging.Logger):
         else:
             self.initial_database_script = initial_database_script
 
-        # Create a database handler to write to a database
+        # Initialize the database handler to avoid a AttributeError
         self.database = None
+        self.sqlite_handler = None
+    
+        # Create a database handler to write to a database
         if log_to_database:
             if database:
                 if isinstance(database, Database):
@@ -82,7 +86,9 @@ class MyLogger(logging.Logger):
                             database_path, self.initial_database_script
                         )
                 elif isinstance(database, Path):
-                    self.database = Database(database, self.initial_database_script)
+                    self.database = Database(
+                        database, self.initial_database_script
+                    )
                     # Create the database file if it does not exist
                     if not database.exists():
                         database.parent.mkdir(parents=True, exist_ok=True)
@@ -115,6 +121,7 @@ class MyLogger(logging.Logger):
     def close(self):
         """Close the logger."""
         if self.file_handler:
+            # Close the file to free it up for other processes
             self.file_handler.close()
             self.removeHandler(self.file_handler)
         if self.stream_handler:
