@@ -1,4 +1,5 @@
 """This module creates a logger for the application."""
+
 import logging
 from pathlib import Path
 from typing import Union
@@ -65,8 +66,11 @@ class MyLogger(logging.Logger):
         else:
             self.initial_database_script = initial_database_script
 
-        # Create a database handler to write to a database
+        # Initialize the database handler to avoid a AttributeError
         self.database = None
+        self.sqlite_handler = None
+    
+        # Create a database handler to write to a database
         if log_to_database:
             if database:
                 if isinstance(database, Database):
@@ -82,7 +86,9 @@ class MyLogger(logging.Logger):
                             database_path, self.initial_database_script
                         )
                 elif isinstance(database, Path):
-                    self.database = Database(database, self.initial_database_script)
+                    self.database = Database(
+                        database, self.initial_database_script
+                    )
                     # Create the database file if it does not exist
                     if not database.exists():
                         database.parent.mkdir(parents=True, exist_ok=True)
@@ -90,23 +96,21 @@ class MyLogger(logging.Logger):
                 else:
                     raise TypeError("database must be a Database or str")
             else:
-                DEFAULT_DATABASE = "database/logging.db"
-                database_path = Path(DEFAULT_DATABASE)
+                default_database = "database/logging.db"
+                database_path = Path(default_database)
                 database_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     self.database = Database(database_path)
-                except Exception as exeption:
+                except FileNotFoundError as exception:
                     self.warning(
                         "Unable to open database at %s: %s",
                         database_path,
-                        exeption,
+                        exception,
                     )
                     # Create an empty database object
                     self.database = Database(":memory:")
 
-            # TODO: Replace this with a check to see if the database is an
-            # actual Database object
-            # self.database = database
+            # Create a database handler
             self.sqlite_handler = SqliteHandler(self.database)
             self.sqlite_handler.setLevel(level)
             self.addHandler(self.sqlite_handler)
@@ -117,6 +121,7 @@ class MyLogger(logging.Logger):
     def close(self):
         """Close the logger."""
         if self.file_handler:
+            # Close the file to free it up for other processes
             self.file_handler.close()
             self.removeHandler(self.file_handler)
         if self.stream_handler:

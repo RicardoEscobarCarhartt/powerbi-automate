@@ -5,7 +5,10 @@ from typing import Dict
 
 import pymsteams
 
-from get_logger import get_logger
+try:
+    from get_logger import get_logger
+except ImportError:
+    from carhartt_pbi_automate.get_logger import get_logger
 
 
 # Initialize logger

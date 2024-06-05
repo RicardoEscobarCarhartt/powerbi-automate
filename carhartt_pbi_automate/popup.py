@@ -6,7 +6,14 @@ import traceback
 import pywinauto
 from pywinauto.application import Application
 
-from get_logger import get_logger
+# Import the get_logger function from the get_logger module if the module is in
+# the same directory as the current script. Otherwise, import the get_logger
+# function from the carhartt_pbi_automate package. This is done because the
+# get_logger module is not part of the package if it is run as a script.
+try:
+    from get_logger import get_logger
+except ImportError:
+    from carhartt_pbi_automate.get_logger import get_logger
 
 
 # Create a logger object
@@ -14,7 +21,7 @@ root_path = Path(__file__).parent.parent
 log = get_logger(
     __name__,
     logfile=root_path / "logs" / "popup.log",
-    toConsole=True,
+    console_output=True,
     level=logging.DEBUG,
 )
 
