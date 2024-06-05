@@ -90,23 +90,21 @@ class MyLogger(logging.Logger):
                 else:
                     raise TypeError("database must be a Database or str")
             else:
-                DEFAULT_DATABASE = "database/logging.db"
-                database_path = Path(DEFAULT_DATABASE)
+                default_database = "database/logging.db"
+                database_path = Path(default_database)
                 database_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     self.database = Database(database_path)
-                except Exception as exeption:
+                except FileNotFoundError as exception:
                     self.warning(
                         "Unable to open database at %s: %s",
                         database_path,
-                        exeption,
+                        exception,
                     )
                     # Create an empty database object
                     self.database = Database(":memory:")
 
-            # TODO: Replace this with a check to see if the database is an
-            # actual Database object
-            # self.database = database
+            # Create a database handler
             self.sqlite_handler = SqliteHandler(self.database)
             self.sqlite_handler.setLevel(level)
             self.addHandler(self.sqlite_handler)
