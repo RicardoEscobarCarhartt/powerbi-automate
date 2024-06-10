@@ -23,10 +23,6 @@ def test_create_test_popup(mock_application):
     # Assert that the start method was called with the correct argument
     mock_application_instance.start.assert_called_once_with("notepad.exe")
 
-    # TODO: I was unable to mock the menu_select method. I will need to investigate further.
-    # Assert that the menu_select method was called with the correct argument
-    # mock_menu_select.Notepad.menu_select.assert_called_once_with("Ayuda->Acerca del Bloc de Notas")
-
 
 @patch("carhartt_pbi_automate.popup.Application")
 @pytest.mark.unit
@@ -48,7 +44,9 @@ def test_detect_popup_window(mock_application):
     detect_popup_window(window_titles)
 
     # Assert that the connect method was called with the correct argument
-    mock_application_instance.connect.assert_called_once_with(title_re="Title1")
+    mock_application_instance.connect.assert_called_once_with(
+        title_re="Title1"
+    )
 
     # Assert that the window method was called with the correct argument
     mock_application_instance.window.assert_called_once_with(title_re="Title1")
