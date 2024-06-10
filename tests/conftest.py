@@ -19,4 +19,5 @@ pytest_plugins = [
     "tests.fixtures.sqlite_handler",
     "tests.fixtures.connector",
     "tests.fixtures.database",
+    "tests.fixtures.dax",
 ]
