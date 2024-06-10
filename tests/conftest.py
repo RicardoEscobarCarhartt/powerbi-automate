@@ -18,4 +18,5 @@ pytest_plugins = [
     "tests.fixtures.my_logger",
     "tests.fixtures.sqlite_handler",
     "tests.fixtures.connector",
+    "tests.fixtures.database",
 ]
