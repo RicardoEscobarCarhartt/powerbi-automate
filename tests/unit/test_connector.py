@@ -1,7 +1,5 @@
 """This module contains unit tests for the connector module."""
 
-from unittest.mock import Mock, patch
-
 import pytest
 
 from carhartt_pbi_automate.connector import (
@@ -39,35 +37,13 @@ def test_get_edw_connection(
     assert result == mock_engine.connect.return_value
 
 
-@pytest.fixture(scope="function")
-def mock_connect():
-    """Mock the adodbapi.connect function."""
-    with patch(
-        "carhartt_pbi_automate.connector.adodbapi.connect"
-    ) as mock_connect:  # pylint: disable=W0621
-        yield mock_connect
-
-
-@pytest.fixture(scope="function")
-def mock_connection_mock_connect(
-    mock_connect,
-):  # pylint: disable=W0621
-    """Fixture for mocking the adodbapi.connect function."""
-    # Mock connect return value
-    mock_connection = Mock()
-    mock_connect.return_value = mock_connection
-    yield mock_connection, mock_connect
-
-
 @pytest.mark.unit
 def test_get_bi_connection(
     mock_connection_mock_connect,
-):  # pylint: disable=W0621
+):
     """Tests the get_bi_connection function."""
     # Unpack fixtures
-    mock_connection, mock_connect = (
-        mock_connection_mock_connect  # pylint: disable=W0621
-    )
+    mock_connection, mock_connect = mock_connection_mock_connect
 
     # Arguments and expected result
     server = "server"
