@@ -1,8 +1,6 @@
 """This test module contains unit tests for the popup module."""
 
 from unittest.mock import patch, Mock
-import sys
-from pathlib import Path
 
 import pytest
 
