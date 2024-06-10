@@ -1,7 +1,5 @@
 """This module contains unit tests for the connector module."""
 
-from unittest.mock import Mock, patch
-
 import pytest
 
 from carhartt_pbi_automate.connector import (
@@ -11,13 +9,12 @@ from carhartt_pbi_automate.connector import (
 
 
 @pytest.mark.unit
-@patch("carhartt_pbi_automate.connector.create_engine")
-def test_get_edw_connection(mock_create_engine):
+def test_get_edw_connection(
+    mock_engine_mock_create_engine,
+):
     """Tests the get_edw_connection function."""
-    # Mock create_engine return value
-    mock_engine = Mock()
-    mock_engine.connect.return_value = Mock()
-    mock_create_engine.return_value = mock_engine
+    # Unpack fixtures
+    mock_engine, mock_create_engine = mock_engine_mock_create_engine
 
     # Arguments and expected result
     args = {
@@ -41,12 +38,12 @@ def test_get_edw_connection(mock_create_engine):
 
 
 @pytest.mark.unit
-@patch("carhartt_pbi_automate.connector.adodbapi.connect")
-def test_get_bi_connection(mock_connect):
+def test_get_bi_connection(
+    mock_connection_mock_connect,
+):
     """Tests the get_bi_connection function."""
-    # Mock create_engine return value
-    mock_connection = Mock()
-    mock_connect.return_value = mock_connection
+    # Unpack fixtures
+    mock_connection, mock_connect = mock_connection_mock_connect
 
     # Arguments and expected result
     server = "server"

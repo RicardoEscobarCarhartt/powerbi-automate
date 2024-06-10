@@ -1,6 +1,5 @@
 """This module contains unit tests for the my_logger module."""
 
-from pathlib import Path
 import logging
 from unittest.mock import Mock
 
