@@ -11,33 +11,33 @@ from carhartt_pbi_automate.connector import (
 
 
 @pytest.mark.unit
-@patch("carhartt_pbi_automate.connector.create_engine")
-def test_get_edw_connection(mock_create_engine):
+def test_get_edw_connection():
     """Tests the get_edw_connection function."""
-    # Mock create_engine return value
-    mock_engine = Mock()
-    mock_engine.connect.return_value = Mock()
-    mock_create_engine.return_value = mock_engine
+    with patch("carhartt_pbi_automate.connector.create_engine") as mock_create_engine:
+        # Mock create_engine return value
+        mock_engine = Mock()
+        mock_engine.connect.return_value = Mock()
+        mock_create_engine.return_value = mock_engine
 
-    # Arguments and expected result
-    args = {
-        "server": "server",
-        "database": "database",
-        "driver": "driver",
-    }
-    expected_connection_string = f"mssql+pyodbc://{args["server"]}/{args["database"]}?driver={args["driver"]}&trusted_connection=yes"
+        # Arguments and expected result
+        args = {
+            "server": "server",
+            "database": "database",
+            "driver": "driver",
+        }
+        expected_connection_string = f"mssql+pyodbc://{args["server"]}/{args["database"]}?driver={args["driver"]}&trusted_connection=yes"
 
-    # Act
-    result = get_edw_connection(args)
+        # Act
+        result = get_edw_connection(args)
 
-    # Asserts
-    # Assert create_engine was called with the expected connection string
-    mock_create_engine.assert_called_with(
-        expected_connection_string, fast_executemany=True
-    )
+        # Asserts
+        # Assert create_engine was called with the expected connection string
+        mock_create_engine.assert_called_with(
+            expected_connection_string, fast_executemany=True
+        )
 
-    # Assert the result is the connection returned by the engine
-    assert result == mock_engine.connect.return_value
+        # Assert the result is the connection returned by the engine
+        assert result == mock_engine.connect.return_value
 
 
 @pytest.mark.unit
