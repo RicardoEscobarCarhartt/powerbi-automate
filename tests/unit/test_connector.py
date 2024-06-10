@@ -10,34 +10,56 @@ from carhartt_pbi_automate.connector import (
 )
 
 
+@pytest.fixture(scope="function")
+def mock_create_engine():
+    """Fixture for mocking the create_engine function."""
+    with patch(
+        "carhartt_pbi_automate.connector.create_engine"
+    ) as _mock_create_engine:
+        yield _mock_create_engine
+
+
+@pytest.fixture(scope="function")
+def mock_engine_mock_create_engine(
+    mock_create_engine,
+):  # pylint: disable=W0621
+    """Fixture for mocking the create_engine function."""
+    # Mock create_engine return value
+    mock_engine = Mock()
+    mock_engine.connect.return_value = Mock()
+    mock_create_engine.return_value = mock_engine
+    yield mock_engine, mock_create_engine
+
+
 @pytest.mark.unit
-def test_get_edw_connection():
+def test_get_edw_connection(
+    mock_engine_mock_create_engine,
+):  # pylint: disable=W0621
     """Tests the get_edw_connection function."""
-    with patch("carhartt_pbi_automate.connector.create_engine") as mock_create_engine:
-        # Mock create_engine return value
-        mock_engine = Mock()
-        mock_engine.connect.return_value = Mock()
-        mock_create_engine.return_value = mock_engine
+    # Unpack fixtures
+    mock_engine, mock_create_engine = (
+        mock_engine_mock_create_engine  # pylint: disable=W0621
+    )
 
-        # Arguments and expected result
-        args = {
-            "server": "server",
-            "database": "database",
-            "driver": "driver",
-        }
-        expected_connection_string = f"mssql+pyodbc://{args["server"]}/{args["database"]}?driver={args["driver"]}&trusted_connection=yes"
+    # Arguments and expected result
+    args = {
+        "server": "server",
+        "database": "database",
+        "driver": "driver",
+    }
+    expected_connection_string = f"mssql+pyodbc://{args["server"]}/{args["database"]}?driver={args["driver"]}&trusted_connection=yes"
 
-        # Act
-        result = get_edw_connection(args)
+    # Act
+    result = get_edw_connection(args)
 
-        # Asserts
-        # Assert create_engine was called with the expected connection string
-        mock_create_engine.assert_called_with(
-            expected_connection_string, fast_executemany=True
-        )
+    # Asserts
+    # Assert create_engine was called with the expected connection string
+    mock_create_engine.assert_called_with(
+        expected_connection_string, fast_executemany=True
+    )
 
-        # Assert the result is the connection returned by the engine
-        assert result == mock_engine.connect.return_value
+    # Assert the result is the connection returned by the engine
+    assert result == mock_engine.connect.return_value
 
 
 @pytest.mark.unit
