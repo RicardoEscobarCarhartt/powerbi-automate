@@ -1,22 +1,8 @@
 """This module contains unit tests for the get_formated_duration module."""
 
-from datetime import timedelta
-
 import pytest
 
 from carhartt_pbi_automate.get_formated_duration import get_formated_duration
-
-
-@pytest.fixture(scope="function")
-def int_arg():
-    """Return a duration as an int."""
-    return 3661
-
-
-@pytest.fixture(scope="function")
-def td_arg():
-    """Return a duration as a timedelta object."""
-    return timedelta(seconds=3661)
 
 
 @pytest.mark.unit

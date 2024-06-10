@@ -20,4 +20,5 @@ pytest_plugins = [
     "tests.fixtures.connector",
     "tests.fixtures.database",
     "tests.fixtures.dax",
+    "tests.fixtures.get_formated_duration",
 ]
