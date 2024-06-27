@@ -25,3 +25,4 @@ echo python "%DIR%\carhartt_pbi_automate\run_supply.py" --daxfile %ARG1% --sqlfi
 
 @REM Deactivate the virtual environment
 call venv\Scripts\deactivate
+exit
