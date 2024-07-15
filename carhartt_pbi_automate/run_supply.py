@@ -405,7 +405,7 @@ else:
     }
 
     # Run the function to send the message to Teams
-    if send_fail_teams_message(args):
+    if send_fail_teams_message(message_args):
         # Log the message
         log.info(
             "Data comparison completed successfully! Message sent to Microsoft Teams."
