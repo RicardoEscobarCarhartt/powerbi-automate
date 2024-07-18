@@ -32,8 +32,6 @@ DEFINE
 			__DS0FilterTable4,
 			"Constrained_Receipt_Plan_Units", 'Inventory Plans'[Constrained Receipt Plan Units],
 			"Total_Receipt_Plan_Units", 'Inventory Plans'[Total Receipt Plan Units],
-			//"Forward_Weeks_Of_Coverage", 'Inventory Plans'[Forward Weeks Of Coverage],
-			"Forward_Weeks_Of_Coverage", 'Inventory Plans'[Forward Weeks Of Coverage],
 			"Planned_Production_Units", 'Inventory Plans'[Planned Production Units],
 			"Work_In_Progress_Units", 'Inventory Plans'[Work In Progress Units],
 			"In_Transit_Units", 'Inventory Plans'[In Transit Units],
