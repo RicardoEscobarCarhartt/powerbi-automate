@@ -78,6 +78,14 @@ load_dotenv()
 # To be accessed from a thread.
 conn_BI_result: List[adodbapi.Connection] = [None]
 
+# Validate there are two arguments, if not, raise an error and exit the program
+if len(sys.argv) != 3:
+    log.error("Error: The script requires two arguments.")
+    log.error("Please provide the paths to the DAX and SQL files.")
+    log.info("Usage: python run_supply.py --daxfile <path_to_dax_file> --sqlfile <path_to_sql_file>")
+    log.error("Exiting the program.")
+    sys.exit(1)
+
 # Parse script arguments
 try:
     script_args = parse_arguments()
