@@ -1,19 +1,18 @@
 """
-Connects to a SQL database using pyodbc
+Connects to a SQL database using pyodbc with a trusted connection
 """
 import pyodbc
 
 
-SERVER = '<server-address>'
-DATABASE = '<database-name>'
-USERNAME = '<username>'
-PASSWORD = '<password>'
+SERVER = 'DBNSQLPNET'
+DATABASE = 'CarharttDw'
+DRIVER = 'ODBC Driver 17 for SQL Server'
 
-connectionString = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={SERVER};DATABASE={DATABASE};UID={USERNAME};PWD={PASSWORD}'
+connectionString = f'DRIVER={{{DRIVER}}};SERVER={SERVER};DATABASE={DATABASE};Trusted_Connection=yes;'
 
 conn = pyodbc.connect(connectionString)
 
-SQL_QUERY = """select now() as date_time from dual;"""
+SQL_QUERY = """SELECT GETDATE() AS date_time;"""
 
 cursor = conn.cursor()
 cursor.execute(SQL_QUERY)
